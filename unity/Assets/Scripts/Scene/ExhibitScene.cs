@@ -1,32 +1,30 @@
 using UnityEngine;
+using Vmw.Meshes;
 
-/// 把整个原型场景一键搭出来：地面 + 光照 + 两件展品。
+/// 把整个原型场景一键搭出来。
 /// 用法：新建空场景 → 建一个空 GameObject → 挂上这个脚本 → 按 Play。
-/// 不依赖任何渲染管线特性（Built-in / URP / HDRP 都能跑），材质用属性探测兼容。
+/// 不依赖任何渲染管线特性（Built-in / URP / HDRP 都能跑），材质统一走 MaterialKit。
 public class ExhibitScene : MonoBehaviour
 {
     [Header("空间")]
     public bool buildGround = true;
     public bool buildLights = true;
     public bool spawnExhibits = true;
+    public bool buildHud = true;
 
-    static Material MakeMaterial(Color color, float smoothness = 0.25f, float metallic = 0f)
-    {
-        Shader sh = Shader.Find("Universal Render Pipeline/Lit")
-                 ?? Shader.Find("Standard")
-                 ?? Shader.Find("HDRP/Lit")
-                 ?? Shader.Find("Sprites/Default");
-        var m = new Material(sh);
-        // 不同管线属性名不同，探测着设，避免"粉色材质"
-        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", color);
-        if (m.HasProperty("_Color")) m.SetColor("_Color", color);
-        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", smoothness);
-        if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", smoothness);
-        if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", metallic);
-        return m;
-    }
+    [Header("脚下网格（给运动提供参照）")]
+    public int gridCellsPerTile = 8;
+    public float gridUnitsPerCell = 2f;
+    public float groundSize = 400f;
 
-    // 场景里已经搭好了就不重复生成（编辑器生成的场景 + 按 Play 时 Awake 都会走这里）
+    [Header("可走莫比乌斯带")]
+    public float walkRadius = 9f;
+    public float walkHalfWidth = 2.5f;
+    public int walkSegU = 320;
+    public int walkSegV = 16;
+    public int markerCount = 24;
+    public float markerHeight = 1.1f;
+
     void Awake() { if (transform.childCount == 0) Build(); }
 
     public void Build()
@@ -34,6 +32,7 @@ public class ExhibitScene : MonoBehaviour
         if (buildGround) BuildGround();
         if (buildLights) BuildLights();
         if (spawnExhibits) BuildExhibits();
+        if (buildHud) BuildHud();
     }
 
     void BuildGround()
@@ -41,9 +40,14 @@ public class ExhibitScene : MonoBehaviour
         var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
         ground.name = "Ground";
         ground.transform.SetParent(transform, false);
-        ground.transform.localScale = new Vector3(40f, 1f, 40f);   // 400x400
-        ground.GetComponent<MeshRenderer>().sharedMaterial =
-            MakeMaterial(new Color(0.07f, 0.10f, 0.18f), 0.1f);
+        ground.transform.localScale = new Vector3(groundSize / 10f, 1f, groundSize / 10f);
+
+        var mat = MaterialKit.MakeMaterial(new Color(0.075f, 0.105f, 0.185f), 0.12f);
+        var tex = MaterialKit.MakeGridTexture(256, gridCellsPerTile);
+        // 平铺次数 = 总格数 / 每图格数，让每格约等于 gridUnitsPerCell 个单位
+        float tiles = groundSize / (gridUnitsPerCell * gridCellsPerTile);
+        MaterialKit.SetMainTexture(mat, tex, tiles);
+        ground.GetComponent<MeshRenderer>().sharedMaterial = mat;
     }
 
     void BuildLights()
@@ -64,47 +68,92 @@ public class ExhibitScene : MonoBehaviour
         RenderSettings.fog = true;
         RenderSettings.fogColor = new Color(0.04f, 0.06f, 0.12f);
         RenderSettings.fogMode = FogMode.Linear;
-        RenderSettings.fogStartDistance = 60f;
-        RenderSettings.fogEndDistance = 190f;
+        RenderSettings.fogStartDistance = 70f;
+        RenderSettings.fogEndDistance = 260f;
     }
 
     void BuildExhibits()
     {
-        // 展品 1：函数曲面（和网页原型同一个函数与尺寸）
+        // 展品 1：函数曲面
         var surface = new GameObject("Exhibit_Surface");
         surface.transform.SetParent(transform, false);
         surface.transform.localPosition = new Vector3(0f, 0f, -20f);
-        var ps = surface.AddComponent<ParametricSurface>();
-        ps.Rebuild();
+        surface.AddComponent<ParametricSurface>().Rebuild();
         surface.GetComponent<MeshRenderer>().sharedMaterial =
-            MakeMaterial(new Color(0.29f, 0.64f, 1f), 0.35f, 0.15f);
+            MaterialKit.MakeMaterial(new Color(0.29f, 0.64f, 1f), 0.35f, 0.15f);
 
-        // 展品 2：莫比乌斯带
+        // 展品 2：展示用的小莫比乌斯带
         var mobius = new GameObject("Exhibit_Mobius");
         mobius.transform.SetParent(transform, false);
         mobius.transform.localPosition = new Vector3(24f, 3.4f, 6f);
-        var ms = mobius.AddComponent<MobiusStrip>();
-        ms.Rebuild();
+        mobius.AddComponent<MobiusStrip>().Rebuild();
         mobius.GetComponent<MeshRenderer>().sharedMaterial =
-            MakeMaterial(new Color(0.55f, 0.88f, 1f), 0.30f, 0.40f);
+            MaterialKit.MakeMaterial(new Color(0.55f, 0.88f, 1f), 0.30f, 0.40f);
 
-        // 展品 3：可走上去的莫比乌斯带（半径与宽度都放大，够人走在上面）
-        // 走一圈后你会从"背面"回来：没跨过边缘，但上下翻转 180°
+        // 展品 3：能走上去的莫比乌斯带（真的能站上去走一圈）
         var walk = new GameObject("Exhibit_WalkableMobius");
         walk.transform.SetParent(transform, false);
         walk.transform.localPosition = new Vector3(0f, 6f, 46f);
         var wm = walk.AddComponent<MobiusStrip>();
-        wm.radius = 9f;
-        wm.halfWidth = 2.5f;
-        wm.segmentsU = 320;
-        wm.segmentsV = 16;
+        wm.radius = walkRadius;
+        wm.halfWidth = walkHalfWidth;
+        wm.segmentsU = walkSegU;
+        wm.segmentsV = walkSegV;
         wm.Rebuild();
         walk.GetComponent<MeshRenderer>().sharedMaterial =
-            MakeMaterial(new Color(0.62f, 0.86f, 1f), 0.25f, 0.30f);
+            MaterialKit.MakeMaterial(new Color(0.62f, 0.86f, 1f), 0.25f, 0.30f);
         var wcol = walk.AddComponent<MeshCollider>();
         wcol.sharedMesh = walk.GetComponent<MeshFilter>().sharedMesh;
 
+        BuildLoopMarkers(walk.transform);
+
         // 展品 4（待办）：五种柏拉图立体 —— 需要各自的网格生成器，下一轮加
-        // 说明见 unity/README.md 的 TODO
+    }
+
+    /// 沿带子中心线摆一圈路标（颜色绕色相环变化）。
+    /// 作用有两个：看得出自己绕了多少、以及"走着走着上下翻过来"这件事是渐变的。
+    void BuildLoopMarkers(Transform strip)
+    {
+        var root = new GameObject("LoopMarkers");
+        root.transform.SetParent(strip, false);
+
+        for (int i = 0; i < markerCount; i++)
+        {
+            float u = i / (float)markerCount * Mathf.PI * 2f;
+            const float e = 0.01f;
+            MeshMath.MobiusPoint(u, 0f, walkRadius, walkHalfWidth, out float cx, out float cy, out float cz);
+            MeshMath.MobiusPoint(u + e, 0f, walkRadius, walkHalfWidth, out float ux, out float uy, out float uz);
+            MeshMath.MobiusPoint(u, e, walkRadius, walkHalfWidth, out float vx, out float vy, out float vz);
+
+            Vector3 p = new Vector3(cx, cy, cz);
+            Vector3 du = new Vector3(ux - cx, uy - cy, uz - cz);
+            Vector3 dv = new Vector3(vx - cx, vy - cy, vz - cz);
+            Vector3 n = Vector3.Cross(du, dv).normalized;
+
+            var post = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            post.name = "Marker_" + i.ToString("00");
+            post.transform.SetParent(root.transform, false);
+            post.transform.localPosition = p + n * (markerHeight * 0.5f);
+            post.transform.localRotation = Quaternion.LookRotation(du.normalized, n);
+            post.transform.localScale = new Vector3(0.16f, markerHeight, 0.16f);
+
+            // 路标不能挡射线（会干扰曲面吸附），去掉碰撞体
+            var col = post.GetComponent<Collider>();
+            if (col != null)
+            {
+                if (Application.isPlaying) Destroy(col);
+                else DestroyImmediate(col);
+            }
+
+            post.GetComponent<MeshRenderer>().sharedMaterial =
+                MaterialKit.MakeMaterial(Color.HSVToRGB(i / (float)markerCount, 0.55f, 0.95f), 0.3f);
+        }
+    }
+
+    void BuildHud()
+    {
+        var hud = new GameObject("HUD");
+        hud.transform.SetParent(transform, false);
+        hud.AddComponent<SpeedHud>();   // 会在运行时自己找到 SurfaceWalker
     }
 }

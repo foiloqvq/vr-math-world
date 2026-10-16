@@ -20,6 +20,14 @@ public class SurfaceWalker : MonoBehaviour
     public LayerMask surfaceMask = ~0;
     public bool lockCursor = true;
 
+    [Header("体感反馈（VR 里建议关掉头部起伏，容易晕）")]
+    public bool enableHeadBob = true;
+    public float bobAmplitude = 0.055f;
+    public float bobFrequency = 8.5f;
+    public bool enableRunFov = true;
+    public float baseFov = 70f;
+    public float runFov = 78f;
+
     [Header("传送（1/2/3）")]
     public Transform[] teleportTargets;
     public float teleportDistance = 14f;
@@ -28,6 +36,8 @@ public class SurfaceWalker : MonoBehaviour
     Vector3 fwd = Vector3.forward;        // 当前的"前"，始终切于曲面
     Vector3 velocity;
     float pitch;
+    float bobPhase;      // 头部起伏相位
+    float moving01;       // 0=静止 1=移动，用来平滑地起停
     Camera cam;
 
     void Awake()
@@ -88,7 +98,21 @@ public class SurfaceWalker : MonoBehaviour
 
         // ---- 姿态 ----
         if (cam != null)
+        {
+            bool moving = wish.sqrMagnitude > 0.01f;
+            moving01 = Mathf.Lerp(moving01, moving ? 1f : 0f, Mathf.Clamp01(Time.deltaTime * 6f));
+            bobPhase += Time.deltaTime * bobFrequency * moving01;
+
             cam.transform.rotation = Quaternion.LookRotation(fwd, up) * Quaternion.Euler(pitch, 0f, 0f);
+            // 轻微的头部起伏：给"人在走"的反馈；静止时自动收敛为 0
+            float bob = enableHeadBob ? Mathf.Sin(bobPhase) * bobAmplitude * moving01 : 0f;
+            cam.transform.localPosition = new Vector3(0f, bob, 0f);
+            if (enableRunFov)
+            {
+                float target = ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && moving) ? runFov : baseFov;
+                cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, target, Mathf.Clamp01(Time.deltaTime * 4f));
+            }
+        }
 
         // ---- 1/2/3 传送到展品 ----
         if (teleportTargets != null)
