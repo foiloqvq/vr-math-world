@@ -26,7 +26,8 @@ public class ExhibitScene : MonoBehaviour
         return m;
     }
 
-    void Awake() { Build(); }
+    // 场景里已经搭好了就不重复生成（编辑器生成的场景 + 按 Play 时 Awake 都会走这里）
+    void Awake() { if (transform.childCount == 0) Build(); }
 
     public void Build()
     {
