@@ -12,7 +12,7 @@ public class CompanionControl : MonoBehaviour
 
     [Header("距离")]
     public float promptRange = 4.5f;      // 能和同伴说话的最近距离
-    public float narrationRange = 14f;    // 站得多近算"在展品旁边"
+    public float narrationRange = 22f;    // 站得多近算"在展品旁边"（按水平距离，不看高低）
 
     [Header("调试显示")]
     public bool showDebug = true;
@@ -85,7 +85,9 @@ public class CompanionControl : MonoBehaviour
             for (int i = 0; i < exhibits.Length; i++)
             {
                 if (exhibits[i] == null) continue;
-                float dist = Vector3.Distance(player.transform.position, exhibits[i].position);
+                // 只看水平距离：展品在高处（比如黑洞）也照样能触发
+                Vector3 a = player.transform.position, b = exhibits[i].position;
+                float dist = new Vector2(a.x - b.x, a.z - b.z).magnitude;
                 if (dist < exDist) { exDist = dist; nearExhibit = ExhibitNames[i]; nearExhibitTransform = exhibits[i]; }
             }
             if (exDist > narrationRange) { nearExhibit = null; nearExhibitTransform = null; }
