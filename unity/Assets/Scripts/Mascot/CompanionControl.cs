@@ -25,6 +25,7 @@ public class CompanionControl : MonoBehaviour
     SurfaceWalker player;
     MascotFollow[] follows;
     MascotDialogue[] dialogues;
+    ExhibitZone[] zones;
     Transform[] exhibits;
     MascotDialogue nearest;
     float nearestDist = float.MaxValue;
@@ -41,6 +42,7 @@ public class CompanionControl : MonoBehaviour
         player = Object.FindFirstObjectByType<SurfaceWalker>();
         follows = Object.FindObjectsByType<MascotFollow>(FindObjectsSortMode.None);
         dialogues = Object.FindObjectsByType<MascotDialogue>(FindObjectsSortMode.None);
+        zones = Object.FindObjectsByType<ExhibitZone>(FindObjectsSortMode.None);
         exhibits = new Transform[ExhibitNames.Length];
         for (int i = 0; i < ExhibitNames.Length; i++)
         {
@@ -77,10 +79,22 @@ public class CompanionControl : MonoBehaviour
             }
         }
 
-        // 找最近的展品（用于讲解）
+        // 展品判定：先看"人有没有走进感知框"（走进去框会发亮），不在框里再用距离兜底
         nearExhibit = null; nearExhibitTransform = null;
+        if (zones == null || zones.Length == 0) zones = Object.FindObjectsByType<ExhibitZone>(FindObjectsSortMode.None);
+        if (player != null && zones != null)
+        {
+            foreach (var z in zones)
+            {
+                if (z == null) continue;
+                bool inside = z.Contains(player.transform.position);
+                z.playerInside = inside;                 // 框自己负责发光
+                if (inside) { nearExhibit = z.exhibitName; nearExhibitTransform = z.transform; }
+            }
+        }
+
         float exDist = float.MaxValue;
-        if (player != null && exhibits != null)
+        if (nearExhibit == null && player != null && exhibits != null)
         {
             for (int i = 0; i < exhibits.Length; i++)
             {

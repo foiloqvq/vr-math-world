@@ -84,7 +84,7 @@ public class ExhibitScene : MonoBehaviour
     {
         if (buildGround && transform.Find("Ground") == null) BuildGround();
         if (buildLights && transform.Find("Sun") == null) BuildLights();
-        if (spawnExhibits) EnsureExhibits();
+        if (spawnExhibits && transform.Find("Exhibit_Surface") == null) BuildExhibits();
 
         var mascots = Object.FindObjectsByType<MascotFollow>(FindObjectsSortMode.None);
         if (mascots.Length == 0)
@@ -145,15 +145,53 @@ public class ExhibitScene : MonoBehaviour
         RenderSettings.fogEndDistance = 260f;
     }
 
-    void EnsureExhibits()
+    // 注意：这里必须"无条件构建"。
+    // 曾经写成按名字检查是否已存在，但 Unity 的 Destroy 延迟到帧末执行 ——
+    // 清空后重建时 Find 还能找到那些"待销毁"的旧展品，于是跳过重建，
+    // 旧的一销毁，展品就全没了（而吉祥物那部分没有检查，反而变成两份）。
+    void BuildExhibits()
     {
-        if (transform.Find("Exhibit_Surface") == null) BuildSurface();
-        if (transform.Find("Exhibit_Mobius") == null) BuildDisplayMobius();
-        if (transform.Find("Exhibit_WalkableMobius") == null) BuildWalkableMobius();
-        if (transform.Find("Exhibit_BlackHole") == null) BuildBlackHole();
+        BuildSurface();
+        BuildDisplayMobius();
+        BuildWalkableMobius();
+        BuildBlackHole();
     }
 
-    void BuildExhibits() { EnsureExhibits(); }
+    /// 感知框：平时几乎隐形，人一进来就发亮
+    void BuildZone(string exhibitName, Vector3 center, Vector3 half)
+    {
+        var root = new GameObject("Zone_" + exhibitName);
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = center;
+        var z = root.AddComponent<ExhibitZone>();
+        z.Setup(exhibitName, half);
+
+        var mat = MaterialKit.MakeMaterial(new Color(0.45f, 0.85f, 1f, 0.08f), 0.6f, 0f);
+        if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
+        if (mat.HasProperty("_Mode")) mat.SetFloat("_Mode", 3f);
+
+        float hx = half.x, hz = half.z, tt = 0.18f;
+        MakeBar(root.transform, mat, new Vector3(0f, -half.y, -hz), new Vector3(hx * 2f, tt, tt));
+        MakeBar(root.transform, mat, new Vector3(0f, -half.y, hz), new Vector3(hx * 2f, tt, tt));
+        MakeBar(root.transform, mat, new Vector3(-hx, -half.y, 0f), new Vector3(tt, tt, hz * 2f));
+        MakeBar(root.transform, mat, new Vector3(hx, -half.y, 0f), new Vector3(tt, tt, hz * 2f));
+        MakeBar(root.transform, mat, new Vector3(-hx, half.y, -hz), Vector3.one * tt);
+        MakeBar(root.transform, mat, new Vector3(hx, half.y, -hz), Vector3.one * tt);
+        MakeBar(root.transform, mat, new Vector3(-hx, half.y, hz), Vector3.one * tt);
+        MakeBar(root.transform, mat, new Vector3(hx, half.y, hz), Vector3.one * tt);
+    }
+
+    static void MakeBar(Transform parent, Material mat, Vector3 pos, Vector3 scale)
+    {
+        var b = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        b.name = "GlowBar";
+        b.transform.SetParent(parent, false);
+        b.transform.localPosition = pos;
+        b.transform.localScale = scale;
+        var col = b.GetComponent<Collider>();
+        if (col != null) { if (Application.isPlaying) Destroy(col); else DestroyImmediate(col); }
+        b.GetComponent<MeshRenderer>().sharedMaterial = mat;
+    }
 
     void BuildSurface()
     {
@@ -163,6 +201,7 @@ public class ExhibitScene : MonoBehaviour
         surface.AddComponent<ParametricSurface>().Rebuild();
         surface.GetComponent<MeshRenderer>().sharedMaterial =
             MaterialKit.MakeMaterial(new Color(0.29f, 0.64f, 1f), 0.35f, 0.15f);
+        BuildZone("Exhibit_Surface", new Vector3(0f, 5f, -20f), new Vector3(13f, 5f, 13f));
     }
 
     void BuildDisplayMobius()
@@ -173,6 +212,7 @@ public class ExhibitScene : MonoBehaviour
         mobius.AddComponent<MobiusStrip>().Rebuild();
         mobius.GetComponent<MeshRenderer>().sharedMaterial =
             MaterialKit.MakeMaterial(new Color(0.55f, 0.88f, 1f), 0.30f, 0.40f);
+        BuildZone("Exhibit_Mobius", new Vector3(24f, 4.4f, 6f), new Vector3(7f, 4f, 7f));
     }
 
     void BuildWalkableMobius()
@@ -191,6 +231,7 @@ public class ExhibitScene : MonoBehaviour
         var wcol = walk.AddComponent<MeshCollider>();
         wcol.sharedMesh = walk.GetComponent<MeshFilter>().sharedMesh;
         BuildLoopMarkers(walk.transform);
+        BuildZone("Exhibit_WalkableMobius", new Vector3(0f, 6f, 46f), new Vector3(13f, 4f, 13f));
     }
 
     void BuildBlackHole()
@@ -213,6 +254,7 @@ public class ExhibitScene : MonoBehaviour
         MakeRail(bh.transform, new Vector3(12.6f, -7.5f, 0f), new Vector3(0.4f, 1.2f, 26f));
         MakeRail(bh.transform, new Vector3(-9f, -7.5f, 12.6f), new Vector3(8f, 1.2f, 0.4f));
         MakeRail(bh.transform, new Vector3(9f, -7.5f, 12.6f), new Vector3(8f, 1.2f, 0.4f));
+        BuildZone("Exhibit_BlackHole", new Vector3(-46f, 1.5f, 34f), new Vector3(13f, 8f, 13f));
 
         var core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         core.name = "Core";
