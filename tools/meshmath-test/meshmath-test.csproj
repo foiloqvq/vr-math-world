@@ -7,6 +7,14 @@
     <RootNamespace>Vmw.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <!--
+      只列「纯数学」文件：不引用 UnityEngine，因此能在引擎外编译与测试。
+      注意别用通配符 —— Meshes 目录里还有 ParametricSurface / MobiusStrip 这类
+      Unity 组件，它们引用 UnityEngine，在这里编不过。
+      新增纯数学文件时，在这里加一行。
+      TODO: 将来把纯数学挪到独立目录（如 Assets/Scripts/PureMath），再用通配符。
+    -->
     <Compile Include="../../unity/Assets/Scripts/Meshes/MeshMath.cs" />
+    <Compile Include="../../unity/Assets/Scripts/Meshes/SnapMath.cs" />
   </ItemGroup>
 </Project>

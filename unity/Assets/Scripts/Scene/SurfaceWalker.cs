@@ -1,4 +1,5 @@
 using UnityEngine;
+using Vmw.Meshes;
 
 /// 能在任意曲面上行走的第一人称/第三人称控制器。
 ///
@@ -185,15 +186,33 @@ public class SurfaceWalker : MonoBehaviour
             bool falling = Vector3.Dot(velocity, gn) <= 0.5f;
             if (!airborne || (falling && gap <= landSnapGap))
             {
-                transform.position = ground.point + gn * playerHeight;
-                velocity = Vector3.ProjectOnPlane(velocity, gn);
+                // 只沿法线修正（切向绝不动），否则站在斜面上会自己滑走
+                if (Mathf.Abs(gap) > 0.002f)
+                {
+                    SnapMath.CorrectAlongNormal(
+                        transform.position.x, transform.position.y, transform.position.z,
+                        ground.point.x, ground.point.y, ground.point.z,
+                        gn.x, gn.y, gn.z, playerHeight,
+                        out float cx, out float cy, out float cz);
+                    transform.position = new Vector3(cx, cy, cz);
+                }
+                // 静摩擦：没有移动输入时把速度归零。
+                // 否则重力每帧加上去、只投影掉法线分量，切向分量会残留并累积 ——
+                // 站在斜面/曲面上就会慢慢往下滑（"站着不动自己移动"）。
+                if (wish.sqrMagnitude < 0.01f && !Input.GetKey(jumpKey))
+                    velocity = Vector3.zero;
+                else
+                    velocity = Vector3.ProjectOnPlane(velocity, gn);
                 airborne = false;
                 up = Vector3.Slerp(up, gn, Mathf.Clamp01(Time.deltaTime * 10f)).normalized;
             }
         }
-        else if (velocity.magnitude > 60f)
+        else
         {
-            velocity = velocity.normalized * 60f;
+            // 掉出曲面范围（例如从带子边缘走出去）：把"上"慢慢拉回世界正上方，
+            // 否则会一直带着"倒挂"的取向，最后卡在地面底下
+            up = Vector3.Slerp(up, Vector3.up, Mathf.Clamp01(Time.deltaTime * 1.5f)).normalized;
+            if (velocity.magnitude > 60f) velocity = velocity.normalized * 60f;
         }
 
         // ---- 相机 ----

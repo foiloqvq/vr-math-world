@@ -97,6 +97,49 @@ class Program
         MeshMath.Bounds(ell, out float edx, out float edy, out float edz);
         Check(Math.Abs(edx - 2f) < 1e-3f && Math.Abs(edy - 2f) < 1e-3f && Math.Abs(edz - 2f) < 1e-3f,
               "包围盒 = 2（单位半径）", $"{edx:F3} x {edy:F3} x {edz:F3}");
+        Console.WriteLine("== 曲面贴合：站着不动不能自己漂移 ==");
+        // 倾斜 30° 的平面（法线在 y-z 面内）。玩家站在平面上方 H 处。
+        // 射线方向用 up=(0,1,0)（落后于真法线）—— 漂移就来自这个偏差。
+        float deg30 = 30f * (float)Math.PI / 180f;
+        float cnx = 0f, cny = (float)Math.Cos(deg30), cnz = -(float)Math.Sin(deg30);
+        const float HH = 1.62f;
+        float upx2 = 0f, upy2 = 1f, upz2 = 0f;
+        float qx0 = 3f, qz0 = 5f;                          // 平面上一点（满足 n·q = 0）
+        float qy0 = -(cnx * qx0 + cnz * qz0) / cny;
+        float pax = qx0 + cnx * HH, pay = qy0 + cny * HH, paz = qz0 + cnz * HH;
+        float obx = pax, oby = pay, obz = paz;
+        float driftNew2 = 0f, driftOld2 = 0f;
+        Func<float, float, float, float> tang = (ax, ay, az) =>
+        {
+            float dx = ax - qx0, dy = ay - qy0, dz = az - qz0;
+            float dn = dx * cnx + dy * cny + dz * cnz;
+            dx -= cnx * dn; dy -= cny * dn; dz -= cnz * dn;
+            return (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
+        };
+        for (int i = 0; i < 300; i++)
+        {
+            pax -= cnx * 0.02f; pay -= cny * 0.02f; paz -= cnz * 0.02f;
+            if (SnapMath.RayPlane(pax + upx2 * 0.2f, pay + upy2 * 0.2f, paz + upz2 * 0.2f,
+                                  -upx2, -upy2, -upz2, cnx, cny, cnz, out float hx, out float hy, out float hz))
+            {
+                SnapMath.CorrectAlongNormal(pax, pay, paz, hx, hy, hz, cnx, cny, cnz, HH,
+                                            out float nxa, out float nya, out float nza);
+                pax = nxa; pay = nya; paz = nza;
+                driftNew2 = Math.Max(driftNew2, tang(pax, pay, paz));
+            }
+            obx -= cnx * 0.02f; oby -= cny * 0.02f; obz -= cnz * 0.02f;
+            if (SnapMath.RayPlane(obx + upx2 * 0.2f, oby + upy2 * 0.2f, obz + upz2 * 0.2f,
+                                  -upx2, -upy2, -upz2, cnx, cny, cnz, out float kx, out float ky, out float kz))
+            {
+                SnapMath.CorrectToHitPoint(kx, ky, kz, cnx, cny, cnz, HH,
+                                           out float nxb, out float nyb, out float nzb);
+                obx = nxb; oby = nyb; obz = nzb;
+                driftOld2 = Math.Max(driftOld2, tang(obx, oby, obz));
+            }
+        }
+        Check(driftNew2 < 1e-3f, "新写法：300 帧切向零漂移", string.Format("{0:E2}", driftNew2));
+        Check(driftOld2 > 0.05f, "旧写法：确实会漂（对照）", string.Format("{0:F3} m", driftOld2));
+
         Console.WriteLine();
         Console.WriteLine(fail == 0 ? "全部通过：网格数学可用 ✓" : $"{fail} 项失败 ✗");
         return fail == 0 ? 0 : 1;
