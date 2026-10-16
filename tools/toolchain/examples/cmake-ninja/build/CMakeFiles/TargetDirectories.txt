@@ -1,3 +1,0 @@
-C:/Users/nb666/Documents/deepseek-harness/default-workspace/My_Library/toolchain/examples/cmake-ninja/build/CMakeFiles/hello.dir
-C:/Users/nb666/Documents/deepseek-harness/default-workspace/My_Library/toolchain/examples/cmake-ninja/build/CMakeFiles/edit_cache.dir
-C:/Users/nb666/Documents/deepseek-harness/default-workspace/My_Library/toolchain/examples/cmake-ninja/build/CMakeFiles/rebuild_cache.dir

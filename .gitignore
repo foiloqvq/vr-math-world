@@ -20,3 +20,26 @@ unity/[Ll]ogs/
 unity/[Uu]serSettings/
 [Dd]ebug/
 [Rr]elease/
+
+# --- C/C++ 构建产物（CMake / Ninja / MSVC）---
+# 根因：示例工程一旦在本地跑过 cmake，就会在 build/ 里生成一堆机器相关的产物，
+# 提交上去既没意义、又会让别人的构建缓存打架。
+**/build/
+**/CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CMakeConfigureLog.yaml
+cmake.check_cache
+TargetDirectories.txt
+build.ninja
+rules.ninja
+.ninja_deps
+.ninja_log
+*.obj
+*.o
+*.a
+*.lib
+*.exp
+*.ilk
+*.iobj
+*.ipdb
