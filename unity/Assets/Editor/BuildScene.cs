@@ -36,6 +36,14 @@ public static class BuildScene
         // 注意：不要再挂 FirstPersonWalker / CharacterController ——
         // 那是"平面简化版"，没有跳跃、视角规格与曲面吸附。Verify() 会检查这一点。
 
+        // 玩家身体：现在是我们的吉祥物（第三人称/正面视角能看见自己）。
+        // 将来换成你的 VRM 化身即可 —— SurfaceWalker 会按视高自动缩放它。
+        var body = MascotBody.Create("Body", player.transform, 0.78f,
+            new Color(0.34f, 0.58f, 0.95f), new Color(0.92f, 0.96f, 1f));
+        var bodySwim = body.AddComponent<MascotSwim>();
+        bodySwim.spout = false;          // 身体不喷水（那是吉祥物的表演）
+        bodySwim.tailAmplitude = 14f;
+
         var camGo = new GameObject("Camera");
         camGo.transform.SetParent(player.transform, false);
         camGo.transform.localPosition = new Vector3(0f, 0f, 0f);   // SurfaceWalker 直接控制相机朝向

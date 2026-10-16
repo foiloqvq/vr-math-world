@@ -179,7 +179,7 @@ public class ExhibitScene : MonoBehaviour
         big.transform.localPosition = new Vector3(0f, 8.6f, 40f);
         var bigFollow = big.AddComponent<MascotFollow>();
         bigFollow.followDistance = 5.5f;
-        bigFollow.followHeight = 2.4f;
+        bigFollow.followHeight = 1.9f;
 
         var small = MascotBody.Create("Mascot_SmallFish", transform, 0.62f,
             new Color(0.58f, 0.82f, 1f), new Color(1f, 0.97f, 0.99f));
