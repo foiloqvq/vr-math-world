@@ -81,6 +81,15 @@ class Program
         float dotHalf = n0[0] * nHalf[0] + n0[1] * nHalf[1] + n0[2] * nHalf[2];
         Check(dotFull < -0.999f, "绕一整圈后法线反向（上方向翻转 180°）", $"dot = {dotFull:F4}");
         Check(Math.Abs(dotHalf) < 0.01f, "半圈时法线转过 90°", $"dot = {dotHalf:F4}");
+        Console.WriteLine("== 圆环面（黑洞吸积盘用） ==");
+        float bigR = 13.5f, smallR = 1.5f;
+        var tor = MeshMath.Torus(bigR, smallR, 160, 24);
+        Check(tor.VertexCount == 161 * 25, "顶点数 = (segU+1)*(segV+1)", tor.VertexCount.ToString());
+        Check(tor.TriangleCount == 160 * 24 * 2, "三角形数 = segU*segV*2", tor.TriangleCount.ToString());
+        Check(MeshMath.IndicesValid(tor), "索引全部合法");
+        MeshMath.Bounds(tor, out float tdx, out float tdy, out float tdz);
+        Check(Math.Abs(tdx - 2f * (bigR + smallR)) < 1e-2f, "外径 = 2(R+r)", $"{tdx:F2}");
+        Check(Math.Abs(tdy - 2f * smallR) < 1e-2f, "厚度 = 2r", $"{tdy:F2}");
         Console.WriteLine();
         Console.WriteLine(fail == 0 ? "全部通过：网格数学可用 ✓" : $"{fail} 项失败 ✗");
         return fail == 0 ? 0 : 1;

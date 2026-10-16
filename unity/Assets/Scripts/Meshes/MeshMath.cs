@@ -84,6 +84,37 @@ namespace Vmw.Meshes
             return new MeshData(verts, tris);
         }
 
+        /// 圆环面（给黑洞的吸积盘、地标等用）
+        public static MeshData Torus(float majorRadius, float minorRadius, int segU, int segV)
+        {
+            if (segU < 3 || segV < 3) throw new ArgumentOutOfRangeException(nameof(segU));
+            int nv = segV + 1;
+            var verts = new float[(segU + 1) * nv * 3];
+            for (int i = 0; i <= segU; i++)
+            {
+                double u = i / (double)segU * Math.PI * 2.0;
+                double cu = Math.Cos(u), su = Math.Sin(u);
+                for (int j = 0; j <= segV; j++)
+                {
+                    double v = j / (double)segV * Math.PI * 2.0;
+                    double r = majorRadius + minorRadius * Math.Cos(v);
+                    int k = (i * nv + j) * 3;
+                    verts[k] = (float)(r * cu);
+                    verts[k + 1] = (float)(minorRadius * Math.Sin(v));
+                    verts[k + 2] = (float)(r * su);
+                }
+            }
+            var tris = new int[segU * segV * 6];
+            int t = 0;
+            for (int i = 0; i < segU; i++)
+            for (int j = 0; j < segV; j++)
+            {
+                int a = i * nv + j, b = a + nv;
+                tris[t++] = a; tris[t++] = b; tris[t++] = a + 1;
+                tris[t++] = b; tris[t++] = b + 1; tris[t++] = a + 1;
+            }
+            return new MeshData(verts, tris);
+        }
         /// 包围盒尺寸（用于自检：确认几何形状在预期范围内）
         public static void Bounds(MeshData m, out float dx, out float dy, out float dz)
         {

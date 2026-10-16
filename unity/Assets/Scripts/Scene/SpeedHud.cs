@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// 屏幕角上的信息：速度、位置、操作提示。
+/// 屏幕角上的信息：速度、视角规格、操作提示。
 /// 用 OnGUI —— 不依赖 UI 包也不依赖 TextMeshPro，任何渲染管线都能显示。
 public class SpeedHud : MonoBehaviour
 {
@@ -35,7 +35,13 @@ public class SpeedHud : MonoBehaviour
             line1 += string.Format("    位置 {0,5:F0}, {1,4:F0}, {2,4:F0}", p.x, p.y, p.z);
         }
         GUI.Label(new Rect(16f, 10f, 900f, 26f), line1, big);
-        GUI.Label(new Rect(16f, 34f, 1100f, 26f), "W A S D 走 · Shift 快跑 · 鼠标环视 · 1 / 2 传送展品", small);
-        GUI.Label(new Rect(16f, 56f, 1100f, 26f), "试这件事：走上带子沿中线绕一整圈 —— 回到起点时，上下会翻过来", small);
+
+        string line2 = "W A S D 走  ·  Shift 快跑  ·  空格 跳  ·  鼠标环视  ·  1 / 2 / 3 传送展品";
+        if (walker != null)
+            line2 += string.Format("    视角规格 [{0}] {1:F2} m  —— 按 V 切换", walker.CurrentPresetName, walker.CurrentEyeHeight);
+        GUI.Label(new Rect(16f, 34f, 1200f, 26f), line2, small);
+
+        GUI.Label(new Rect(16f, 56f, 1200f, 26f),
+            "试这件事：按 2 走到莫比乌斯带上，沿中线绕一整圈 —— 回到起点时，上下会翻过来", small);
     }
 }

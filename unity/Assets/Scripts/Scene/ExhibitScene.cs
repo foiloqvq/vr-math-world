@@ -23,7 +23,7 @@ public class ExhibitScene : MonoBehaviour
     public int walkSegU = 320;
     public int walkSegV = 16;
     public int markerCount = 24;
-    public float markerHeight = 1.1f;
+    public float markerHeight = 1.8f;   // 用户反馈"参照物太矮看不全"，加高
 
     void Awake() { if (transform.childCount == 0) Build(); }
 
@@ -107,7 +107,26 @@ public class ExhibitScene : MonoBehaviour
 
         BuildLoopMarkers(walk.transform);
 
-        // 展品 4（待办）：五种柏拉图立体 —— 需要各自的网格生成器，下一轮加
+        // 展品 4：黑洞（黑球 + 倾斜的发光圆环）—— 远处就能认出来的地标
+        var bh = new GameObject("Exhibit_BlackHole");
+        bh.transform.SetParent(transform, false);
+        bh.transform.localPosition = new Vector3(-46f, 18f, 34f);
+
+        var core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        core.name = "Core";
+        core.transform.SetParent(bh.transform, false);
+        core.transform.localScale = Vector3.one * 9f;
+        core.GetComponent<MeshRenderer>().sharedMaterial =
+            MaterialKit.MakeMaterial(new Color(0.01f, 0.01f, 0.015f), 0f);
+        var coreCol = core.GetComponent<Collider>();
+        if (coreCol != null) { if (Application.isPlaying) Destroy(coreCol); else DestroyImmediate(coreCol); }
+
+        var ring = MeshUtil.Spawn("AccretionRing", MeshMath.Torus(13.5f, 1.5f, 160, 24),
+            MaterialKit.MakeMaterial(new Color(1f, 0.55f, 0.16f), 0.45f, 0.2f), bh.transform);
+        ring.transform.localRotation = Quaternion.Euler(74f, 0f, 0f);
+        ring.AddComponent<SlowSpin>();
+
+        // 展品 5（待办）：五种柏拉图立体 —— 需要各自的网格生成器，下一轮加
     }
 
     /// 沿带子中心线摆一圈路标（颜色绕色相环变化）。
