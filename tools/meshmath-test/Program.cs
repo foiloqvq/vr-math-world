@@ -58,6 +58,29 @@ class Program
         }
         Check(closes, "绕一圈闭合到 -v 侧（单面性）", $"最大偏差 {worst:E2}");
 
+        Console.WriteLine("== 体感莫比乌斯：走一圈后上方向翻转 180° ==");
+        // 沿线走一圈 u: 0 -> 2π（v 固定在中心线上），曲面法线应当反向
+        float R2 = 9f, W2 = 2.5f;
+        Func<double, float[]> normalAt = (uu) =>
+        {
+            const float e = 1e-3f;
+            MeshMath.MobiusPoint((float)uu, 0f, R2, W2, out float px, out float py, out float pz);
+            MeshMath.MobiusPoint((float)uu + e, 0f, R2, W2, out float ux, out float uy, out float uz);
+            MeshMath.MobiusPoint((float)uu, e, R2, W2, out float vx, out float vy, out float vz);
+            float dux = ux - px, duy = uy - py, duz = uz - pz;
+            float dvx = vx - px, dvy = vy - py, dvz = vz - pz;
+            float nx = duy * dvz - duz * dvy, ny = duz * dvx - dux * dvz, nz = dux * dvy - duy * dvx;
+            float len = (float)Math.Sqrt(nx * nx + ny * ny + nz * nz);
+            if (len < 1e-9f) len = 1f;
+            return new[] { nx / len, ny / len, nz / len };
+        };
+        var n0 = normalAt(0.0);
+        var nHalf = normalAt(Math.PI);
+        var nFull = normalAt(Math.PI * 2);
+        float dotFull = n0[0] * nFull[0] + n0[1] * nFull[1] + n0[2] * nFull[2];
+        float dotHalf = n0[0] * nHalf[0] + n0[1] * nHalf[1] + n0[2] * nHalf[2];
+        Check(dotFull < -0.999f, "绕一整圈后法线反向（上方向翻转 180°）", $"dot = {dotFull:F4}");
+        Check(Math.Abs(dotHalf) < 0.01f, "半圈时法线转过 90°", $"dot = {dotHalf:F4}");
         Console.WriteLine();
         Console.WriteLine(fail == 0 ? "全部通过：网格数学可用 ✓" : $"{fail} 项失败 ✗");
         return fail == 0 ? 0 : 1;
