@@ -1,9 +1,12 @@
 using UnityEngine;
 using Vmw.Meshes;
 
-/// 把整个原型场景一键搭出来。
-/// 用法：新建空场景 → 建一个空 GameObject → 挂上这个脚本 → 按 Play。
-/// 不依赖任何渲染管线特性（Built-in / URP / HDRP 都能跑），材质统一走 MaterialKit。
+/// 把整个原型场景一键搭出来，并且**能在运行时补齐缺的东西**。
+///
+/// 为什么要"补齐"：场景里只存了 World / Player 这些容器，其余内容由代码生成。
+/// 一旦代码新增了组件（对话、同伴控制…），旧场景里就没有它们 ——
+/// 以前必须手动重新生成场景，反复坑人。现在 Awake 会检查并只补缺失部分，
+/// 于是改完代码直接按 Play 就行。
 public class ExhibitScene : MonoBehaviour
 {
     [Header("空间")]
@@ -25,18 +28,71 @@ public class ExhibitScene : MonoBehaviour
     public int walkSegU = 320;
     public int walkSegV = 16;
     public int markerCount = 24;
-    public float markerHeight = 1.8f;   // 用户反馈"参照物太矮看不全"，加高
+    public float markerHeight = 1.8f;
 
-    void Awake() { if (transform.childCount == 0) Build(); }
+    /// 大鱼台词（顺便当展品导览）
+    public static readonly string[] BigLines =
+    {
+        "我是大肥鱼。那条小鱼是我妹妹，她跟得慢，你别笑她。",
+        "前面那个曲面是 z 等于 sin(r) 除以 r —— 中间那根尖峰，是 r 趋近 0 时它自己冒出来的。",
+        "右边那条带子只有一个面。你走一整圈回到起点，会发现自己上下翻了，却没跨过任何边缘。",
+        "再往前有个黑洞。它不咬人，只是把光拦住了。",
+        "按 R 可以让我停下来，停在哪里都行 —— 你回来的时候我还在。",
+    };
+
+    /// 小鱼台词
+    public static readonly string[] SmallLines =
+    {
+        "……姐姐让我跟着你。",
+        "那个圆圆的洞，掉进去会到哪里呀？",
+        "你走快了我就追不上啦，等等我嘛。",
+        "姐姐懂好多数学，我只会跟着她。",
+    };
+
+    void Awake()
+    {
+        if (transform.childCount == 0) Build();   // 完全空的世界：整套搭出来
+        else EnsureRuntimeParts();                // 旧场景：只补缺的部分
+    }
 
     public void Build()
     {
         if (buildGround) BuildGround();
         if (buildLights) BuildLights();
         if (spawnExhibits) BuildExhibits();
-        if (buildHud) BuildHud();
-        if (buildCompanion) BuildCompanion();
         if (buildMascots) BuildMascots();
+        if (buildCompanion) BuildCompanion();
+        if (buildHud) BuildHud();
+    }
+
+    /// 运行时补齐：缺什么建什么。改了代码不用重新生成场景。
+    public void EnsureRuntimeParts()
+    {
+        if (buildGround && transform.Find("Ground") == null) BuildGround();
+        if (buildLights && transform.Find("Sun") == null) BuildLights();
+        if (spawnExhibits) EnsureExhibits();
+
+        var mascots = Object.FindObjectsByType<MascotFollow>(FindObjectsSortMode.None);
+        if (mascots.Length == 0)
+        {
+            if (buildMascots) BuildMascots();
+        }
+        else
+        {
+            foreach (var m in mascots)
+            {
+                if (m == null) continue;
+                if (m.GetComponent<MascotSwim>() == null) m.gameObject.AddComponent<MascotSwim>();
+                var d = m.GetComponent<MascotDialogue>();
+                if (d == null) d = m.gameObject.AddComponent<MascotDialogue>();
+                if (d.lines == null || d.lines.Length == 0)
+                    d.lines = m.name.ToLower().Contains("small") ? SmallLines : BigLines;
+            }
+        }
+
+        if (buildCompanion && Object.FindFirstObjectByType<CompanionControl>() == null) BuildCompanion();
+        if (buildHud && Object.FindFirstObjectByType<SpeedHud>() == null) BuildHud();
+        if (transform.Find("Ground") != null && transform.Find("Sun") == null && buildLights) BuildLights();
     }
 
     void BuildGround()
@@ -48,7 +104,6 @@ public class ExhibitScene : MonoBehaviour
 
         var mat = MaterialKit.MakeMaterial(new Color(0.075f, 0.105f, 0.185f), 0.12f);
         var tex = MaterialKit.MakeGridTexture(256, gridCellsPerTile);
-        // 平铺次数 = 总格数 / 每图格数，让每格约等于 gridUnitsPerCell 个单位
         float tiles = groundSize / (gridUnitsPerCell * gridCellsPerTile);
         MaterialKit.SetMainTexture(mat, tex, tiles);
         ground.GetComponent<MeshRenderer>().sharedMaterial = mat;
@@ -76,25 +131,38 @@ public class ExhibitScene : MonoBehaviour
         RenderSettings.fogEndDistance = 260f;
     }
 
-    void BuildExhibits()
+    void EnsureExhibits()
     {
-        // 展品 1：函数曲面
+        if (transform.Find("Exhibit_Surface") == null) BuildSurface();
+        if (transform.Find("Exhibit_Mobius") == null) BuildDisplayMobius();
+        if (transform.Find("Exhibit_WalkableMobius") == null) BuildWalkableMobius();
+        if (transform.Find("Exhibit_BlackHole") == null) BuildBlackHole();
+    }
+
+    void BuildExhibits() { EnsureExhibits(); }
+
+    void BuildSurface()
+    {
         var surface = new GameObject("Exhibit_Surface");
         surface.transform.SetParent(transform, false);
         surface.transform.localPosition = new Vector3(0f, 0f, -20f);
         surface.AddComponent<ParametricSurface>().Rebuild();
         surface.GetComponent<MeshRenderer>().sharedMaterial =
             MaterialKit.MakeMaterial(new Color(0.29f, 0.64f, 1f), 0.35f, 0.15f);
+    }
 
-        // 展品 2：展示用的小莫比乌斯带
+    void BuildDisplayMobius()
+    {
         var mobius = new GameObject("Exhibit_Mobius");
         mobius.transform.SetParent(transform, false);
         mobius.transform.localPosition = new Vector3(24f, 3.4f, 6f);
         mobius.AddComponent<MobiusStrip>().Rebuild();
         mobius.GetComponent<MeshRenderer>().sharedMaterial =
             MaterialKit.MakeMaterial(new Color(0.55f, 0.88f, 1f), 0.30f, 0.40f);
+    }
 
-        // 展品 3：能走上去的莫比乌斯带（真的能站上去走一圈）
+    void BuildWalkableMobius()
+    {
         var walk = new GameObject("Exhibit_WalkableMobius");
         walk.transform.SetParent(transform, false);
         walk.transform.localPosition = new Vector3(0f, 6f, 46f);
@@ -108,10 +176,11 @@ public class ExhibitScene : MonoBehaviour
             MaterialKit.MakeMaterial(new Color(0.62f, 0.86f, 1f), 0.25f, 0.30f);
         var wcol = walk.AddComponent<MeshCollider>();
         wcol.sharedMesh = walk.GetComponent<MeshFilter>().sharedMesh;
-
         BuildLoopMarkers(walk.transform);
+    }
 
-        // 展品 4：黑洞（黑球 + 倾斜的发光圆环）—— 远处就能认出来的地标
+    void BuildBlackHole()
+    {
         var bh = new GameObject("Exhibit_BlackHole");
         bh.transform.SetParent(transform, false);
         bh.transform.localPosition = new Vector3(-46f, 18f, 34f);
@@ -129,12 +198,9 @@ public class ExhibitScene : MonoBehaviour
             MaterialKit.MakeMaterial(new Color(1f, 0.55f, 0.16f), 0.45f, 0.2f), bh.transform);
         ring.transform.localRotation = Quaternion.Euler(74f, 0f, 0f);
         ring.AddComponent<SlowSpin>();
-
-        // 展品 5（待办）：五种柏拉图立体 —— 需要各自的网格生成器，下一轮加
     }
 
-    /// 沿带子中心线摆一圈路标（颜色绕色相环变化）。
-    /// 作用有两个：看得出自己绕了多少、以及"走着走着上下翻过来"这件事是渐变的。
+    /// 沿带子中心线摆一圈路标（颜色绕色相环变化）
     void BuildLoopMarkers(Transform strip)
     {
         var root = new GameObject("LoopMarkers");
@@ -160,13 +226,8 @@ public class ExhibitScene : MonoBehaviour
             post.transform.localRotation = Quaternion.LookRotation(du.normalized, n);
             post.transform.localScale = new Vector3(0.16f, markerHeight, 0.16f);
 
-            // 路标不能挡射线（会干扰曲面吸附），去掉碰撞体
             var col = post.GetComponent<Collider>();
-            if (col != null)
-            {
-                if (Application.isPlaying) Destroy(col);
-                else DestroyImmediate(col);
-            }
+            if (col != null) { if (Application.isPlaying) Destroy(col); else DestroyImmediate(col); }
 
             post.GetComponent<MeshRenderer>().sharedMaterial =
                 MaterialKit.MakeMaterial(Color.HSVToRGB(i / (float)markerCount, 0.55f, 0.95f), 0.3f);
@@ -182,6 +243,11 @@ public class ExhibitScene : MonoBehaviour
         var bigFollow = big.AddComponent<MascotFollow>();
         bigFollow.followDistance = 5.5f;
         bigFollow.followHeight = 1.9f;
+        var bigSwim = big.AddComponent<MascotSwim>();
+        bigSwim.tailFrequency = 1.3f;
+        bigSwim.finFrequency = 1.3f;
+        var bigTalk = big.AddComponent<MascotDialogue>();
+        bigTalk.lines = BigLines;
 
         var small = MascotBody.Create("Mascot_SmallFish", transform, 0.62f,
             new Color(0.58f, 0.82f, 1f), new Color(1f, 0.97f, 0.99f));
@@ -190,36 +256,14 @@ public class ExhibitScene : MonoBehaviour
         smallFollow.target = big.transform;      // 妹妹跟着姐姐
         smallFollow.followDistance = 3.0f;
         smallFollow.followHeight = -0.15f;
-        smallFollow.followLerp = 1.6f;           // 慢半拍更可爱
+        smallFollow.followLerp = 1.6f;
         smallFollow.bobFrequency = 1.3f;
-
-        // 让它们游起来：大鱼慢一点，小鱼快一点，看起来是两条活鱼
-        var bigSwim = big.AddComponent<MascotSwim>();
-        bigSwim.tailFrequency = 1.3f;
-        bigSwim.finFrequency = 1.3f;
         var smallSwim = small.AddComponent<MascotSwim>();
         smallSwim.tailFrequency = 1.9f;
         smallSwim.finFrequency = 1.9f;
         smallSwim.spoutInterval = 5f;
-
-        // 固定词对话（以后换成真正的对话）。台词顺便当展品导览。
-        var bigTalk = big.AddComponent<MascotDialogue>();
-        bigTalk.lines = new[]
-        {
-            "我是大肥鱼。那条小鱼是我妹妹，她跟得慢，你别笑她。",
-            "前面那个曲面是 z 等于 sin(r) 除以 r —— 中间那根尖峰，是 r 趋近 0 时它自己冒出来的。",
-            "右边那条带子只有一个面。你走一整圈回到起点，会发现自己上下翻了，却没跨过任何边缘。",
-            "再往前有个黑洞。它不咬人，只是把光拦住了。",
-            "按 R 可以让我停下来，停在哪里都行 —— 你回来的时候我还在。",
-        };
         var smallTalk = small.AddComponent<MascotDialogue>();
-        smallTalk.lines = new[]
-        {
-            "……姐姐让我跟着你。",
-            "那个圆圆的洞，掉进去会到哪里呀？",
-            "你走快了我就追不上啦，等等我嘛。",
-            "姐姐懂好多数学，我只会跟着她。",
-        };
+        smallTalk.lines = SmallLines;
     }
 
     /// 同伴控制节点（E 说话 / R 停下继续）
@@ -234,6 +278,6 @@ public class ExhibitScene : MonoBehaviour
     {
         var hud = new GameObject("HUD");
         hud.transform.SetParent(transform, false);
-        hud.AddComponent<SpeedHud>();   // 会在运行时自己找到 SurfaceWalker
+        hud.AddComponent<SpeedHud>();
     }
 }
