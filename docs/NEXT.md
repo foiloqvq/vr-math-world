@@ -113,13 +113,13 @@ body `{"text":"...","text_lang":"zh"}` → 返回 `audio/wav`（最小 JSON 即�
 | --- | --- | --- | --- |
 | **`vr-math-world`** | **主项目**（那个世界）+ `subprojects/`（语音等作品） | 公开 | 已建，进行中 |
 | **`My_Library`** → 改成**公开图书馆** | 我们写的、**借别人用**的资源（讲解 / 教程 / 整理好的知识） | 公开 | 待整理 |
-| **`llm_rag_proxy`** → 改成**学习空间** | 文献 + 作业 + 错题（foilo 的 + 大肥鱼的踩坑） | 自用 | **地基已打**（目录 + .gitignore + README，提交 d0059de） |
+| **`study-space`**（原 llm_rag_proxy，改名已完成） | 文献 + 作业 + 错题（foilo 的 + 大肥鱼的踩坑） | 自用 | **地基已打**（目录 + .gitignore + README，提交 d0059de） |
 
 **待办（按顺序）**：
 
-1. **用户自己去 GitHub 改两个仓库名**（改名需要账号权限，大肥鱼不碰钥匙）：
-   `llm_rag_proxy` → 建议 `study-space`；`My_Library` → 公开图书馆（名字待定）
-   改完后本地 remote 地址要同步更新（GitHub 会重定向，短期不会坏，但别留死链）
+1. ~~改 study-space 名字~~ —— **已完成**：`llm_rag_proxy` 已改名为 `study-space`，
+   本地 remote 已同步（2026-10-16）。**仅剩 `My_Library` 改名**（改成公开图书馆，名字待定）。
+   注意：GitHub 对旧名会自动重定向，所以短期内老链接不会断。
 2. `My_Library` 整理：把 `dsh-yachiyo-tts/` 与 `toolchain/` 搬到
    `vr-math-world/subprojects/` 与 `tools/`；剩下的整理成"公开资源"的样子
 3. 回到主项目：往数学区 **Slot_1** 摆第一件新展品 —— **复变函数的颜色映射**
