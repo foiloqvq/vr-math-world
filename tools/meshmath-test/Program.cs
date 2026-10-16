@@ -162,6 +162,31 @@ class Program
             Check(a.Real == b.Real && a.Imaginary == b.Imaginary, "z^2 与 z*z 逐位一致", $"{a} vs {b}");
         }
 
+        // 0b) 平方根 √z（主值支）—— 幂次表里的 "1/2" 那一项
+        {
+            // ① 远离分支切处：开方再平方必须回到自己
+            Complex z0 = new Complex(2.0, 0.5);
+            Complex root = ComplexColor.PowFraction(z0, 1, 2);
+            Complex back = root * root;
+            Check(Math.Abs(back.Real - z0.Real) < 1e-12 && Math.Abs(back.Imaginary - z0.Imaginary) < 1e-12,
+                  "√z 再平方 = z（远离分支切处）", $"{back} vs {z0}");
+
+            // ② 分支切落在负实轴上：正上方与正下方趋近，结果必须**不同**（就是那道缝）
+            Complex justAbove = ComplexColor.PowFraction(new Complex(-1.0, 1e-9), 1, 2);
+            Complex justBelow = ComplexColor.PowFraction(new Complex(-1.0, -1e-9), 1, 2);
+            double gap = (justAbove - justBelow).Magnitude;
+            Check(gap > 1.9, "负实轴上有分支切：两侧 √z 的值差约 2i", $"|差|={gap:F6}");
+            Check(justAbove.Imaginary > 0.9 && justBelow.Imaginary < -0.9,
+                  "分支切两侧分别是 +i 与 -i（arg 从 +π 跳到 -π 的一半）",
+                  $"上={justAbove:F4} 下={justBelow:F4}");
+
+            // ③ 绕半圈时辐角只转 π/2 —— 这就是"√z 的颜色只绕半圈"的来源
+            Complex one = ComplexColor.PowFraction(Complex.One, 1, 2);
+            double dArg = Math.Atan2(justAbove.Imaginary, justAbove.Real)
+                        - Math.Atan2(one.Imaginary, one.Real);
+            Check(Math.Abs(dArg - Math.PI / 2) < 1e-6, "从 arg 0 到 arg π，√z 的辐角只转 π/2", $"{dArg:F6} rad");
+        }
+
         // 1) 辐角 → 色相
         ComplexColor.RgbForZ(sq, 1f, 0f, out float r1, out float g1, out float b1);
         Check(r1 > g1 && b1 < 0.02f, "z=1 → w=1（辐角 0）取红", $"rgb=({r1:F3},{g1:F3},{b1:F3})");

@@ -33,20 +33,33 @@ public class ExhibitScene : MonoBehaviour
     public float markerHeight = 1.8f;
 
     /// 复变函数颜色映射（数学区 Slot_1）的全部参数。
-    /// **幂次 n 是运行时可变的**：按 `Q` 在 1/2/3/4 之间循环，图版与地砖会立刻重算。
-    /// 眼睛能直接数出来的差别：绕原点走一圈，颜色绕 n 圈（n=1 一圈、n=2 两圈、n=3 三圈）。
-    public const int ComplexPowerDefault = 2;
-    public const int ComplexPowerMax = 4;
+    /// **幂次是运行时可变的**：按 `Q` 在 `z, √z, z², z³, z⁴` 之间循环，图版与地砖立刻重算。
+    ///
+    /// 眼睛能直接数出来的差别：
+    ///   · 整数幂 z^n —— 绕原点走一圈，颜色绕 **n 圈**（n=1 一圈、2 两圈、3 三圈）
+    ///   · 平方根 √z —— 颜色只绕 **半圈**，而且在**负实轴**上撕开一道**分支切**：
+    ///     同一条轴的两侧颜色不同（arg 从 +π 跳到 -π，开方后是 +π/2 与 -π/2）
+    ///
+    /// 幂次表用「分子/分母」表示：1/1、1/2、2/1、3/1、4/1。
+    /// 默认取第 2 项（1/2 = √z）—— 这是最值得先看见的那一件。
+    public static readonly int[] ComplexPowNumerators = { 1, 1, 2, 3, 4 };
+    public static readonly int[] ComplexPowDenominators = { 1, 2, 1, 1, 1 };
+    public const int ComplexPowerDefault = 2;   // 表的第几项（1 基，2 = √z）
+
     public KeyCode complexCycleKey = KeyCode.Q;
-    /// 当前幂次（1..ComplexPowerMax）。真身只在这里，函数与贴图都从它派生。
+    /// 当前是幂次表里的第几项（1 基）。真身只在这里，函数与贴图都从它派生。
     public int complexPower = ComplexPowerDefault;
-    /// 展品的函数：z^n。幂函数本体在 **ComplexColor.Pow**（纯数学、可在引擎外被测），
-    /// 这里只是把它接成委托，好让 n 在运行时能变。
+    /// 展品的函数：z^(num/den)。幂函数本体在 **ComplexColor.PowFraction**
+    /// （纯数学、可在引擎外被测），这里只是接成委托，好让它运行时能变。
     public System.Func<Complex, Complex> ComplexExhibitFn
     {
-        get { return ComplexColor.PowFunc(complexPower); }
+        get
+        {
+            int idx = Mathf.Clamp(complexPower, 1, ComplexPowNumerators.Length) - 1;
+            return ComplexColor.PowFractionFunc(ComplexPowNumerators[idx], ComplexPowDenominators[idx]);
+        }
     }
-    /// 贴图缓存：4 个幂次各一张，按需生成（第一次切换付一次 ~40ms，之后瞬切）
+    /// 贴图缓存：每个幂次一张，按需生成（第一次切换付一次 ~40ms，之后瞬切）
     Texture2D[] complexTexCache;
     Material complexPanelMat;
     Material complexFloorMat;
@@ -110,17 +123,17 @@ public class ExhibitScene : MonoBehaviour
             CycleComplexPower();
     }
 
-    /// n → 1/2/3/4 → 1 ……（mod 而不是取模，保证 4 之后回到 1）
+    /// 幂次表里往后走一项，走到头回到第一项。
     public void CycleComplexPower()
     {
-        int next = complexPower % ComplexPowerMax + 1;
+        int next = complexPower % ComplexPowNumerators.Length + 1;
         SetComplexPower(next);
     }
 
     /// 换幂次：重算/取缓存贴图，同时更新图版与地砖（两处共用同一张，永远同步）。
-    public void SetComplexPower(int n)
+    public void SetComplexPower(int item)
     {
-        complexPower = Mathf.Clamp(n, 1, ComplexPowerMax);
+        complexPower = Mathf.Clamp(item, 1, ComplexPowNumerators.Length);
         if (complexTexCache == null) return;   // 还没生成过展品（编辑器里没 Build）
         Texture2D tex = ComplexTextureFor(complexPower);
         if (complexPanelMat != null) MaterialKit.SetMainTexture(complexPanelMat, tex, 1f);
@@ -130,21 +143,40 @@ public class ExhibitScene : MonoBehaviour
         UpdateComplexHud();
     }
 
-    /// 幂次 n 对应的贴图；缓存里没有就现算一张（并缓存，下次瞬切）。
-    Texture2D ComplexTextureFor(int n)
+    /// 幂次表第 item 项对应的贴图；缓存里没有就现算一张（并缓存，下次瞬切）。
+    Texture2D ComplexTextureFor(int item)
     {
-        int idx = Mathf.Clamp(n, 1, ComplexPowerMax);
+        int idx = Mathf.Clamp(item, 1, ComplexPowNumerators.Length);
         if (complexTexCache[idx] == null)
-            complexTexCache[idx] = MakeComplexTexture(ComplexColor.PowFunc(idx), ComplexMapSize, ComplexMapPixels);
+        {
+            int num = ComplexPowNumerators[idx - 1];
+            int den = ComplexPowDenominators[idx - 1];
+            complexTexCache[idx] = MakeComplexTexture(
+                ComplexColor.PowFractionFunc(num, den), ComplexMapSize, ComplexMapPixels);
+        }
         return complexTexCache[idx];
     }
 
-    /// 屏幕上的小字：当前是 z 的几次幂 + 怎么换。给 SpeedHud 显示。
+    /// 展品当前的幂次写法（给 HUD / 讲解用）：1/1 写 "z"，1/2 写 "z^(1/2)"，其余写 "z^n"
+    public string ComplexPowerLabel()
+    {
+        int idx = Mathf.Clamp(complexPower, 1, ComplexPowNumerators.Length) - 1;
+        int num = ComplexPowNumerators[idx], den = ComplexPowDenominators[idx];
+        if (den == 1) return num == 1 ? "z" : "z^" + num;
+        return "z^(" + num + "/" + den + ")";
+    }
+
+    /// 屏幕上的小字：当前函数 + 怎么换 + 这次该看什么。给 SpeedHud 显示。
     void UpdateComplexHud()
     {
+        int idx = Mathf.Clamp(complexPower, 1, ComplexPowNumerators.Length) - 1;
+        bool half = ComplexPowDenominators[idx] != 1;
         SpeedHud.ComplexStatus = string.Format(
-            "复变展品：f(z) = z^{0}   —— 按 {1} 换幂次（1→2→3→4）· 绕原点走一圈，颜色就绕 {0} 圈",
-            complexPower, complexCycleKey);
+            "复变展品：f(z) = {0}   —— 按 {1} 换（z → √z → z² → z³ → z⁴）· {2}",
+            ComplexPowerLabel(), complexCycleKey,
+            half
+                ? "√z：绕原点只转半圈，而且负实轴上有道分支切 —— 那条缝两侧颜色不一样"
+                : string.Format("绕原点走一圈，颜色绕 {0} 圈", ComplexPowNumerators[idx]));
     }
 
     public void Build()
@@ -450,7 +482,7 @@ public class ExhibitScene : MonoBehaviour
     {
         // 幂次贴图缓存：4 张按需生成（第一次按 Q 会付一次 ~40ms，之后瞬切）
         if (complexTexCache == null)
-            complexTexCache = new Texture2D[ComplexPowerMax + 1];
+            complexTexCache = new Texture2D[ComplexPowNumerators.Length + 1];
         // 重新生成世界时把老贴图丢掉（编辑里反复 Play 不会堆垃圾）
         for (int i = 0; i < complexTexCache.Length; i++)
         {

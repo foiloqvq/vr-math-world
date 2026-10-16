@@ -18,10 +18,10 @@ namespace Vmw.Meshes
         /// 取 16 是因为默认展品用 f = z²、定义域 |z| ≤ 3 → |f| 最大 9，留一点余量。
         public const float ReferenceMagnitude = 16f;
 
-        /// 幂函数 z^n（n 为正整数）：展品按 Q 循环的就是这个。
+        /// 幂函数 z^n（n 为正整数）：展品按 Q 循环的整数幂走这里。
         /// 用循环乘而不是 Math.Pow —— 复数没有内置幂，而且整数幂用乘法零误差。
         /// 放在这里（而不是 ExhibitScene）是因为它**不碰 UnityEngine**，
-        /// 引擎外的 33 条断言才能直接测它。
+        /// 引擎外的断言才能直接测它。
         public static Complex Pow(Complex z, int n)
         {
             Complex acc = Complex.One;
@@ -29,10 +29,32 @@ namespace Vmw.Meshes
             return acc;
         }
 
+        /// 有理幂 z^(num/den)（den = 1 时就是整数幂，走循环乘、与以前逐位一致）。
+        ///
+        /// den == 2：**主值平方根** —— |z| 开方、辐角取一半（arg ∈ (-π, π] 的一半）。
+        /// 于是负实轴上出现**分支切**：z 从 -1 的上下两侧趋近时，arg 分别趋近 +π 与 -π，
+        /// 开方后是 +π/2 与 -π/2 —— **同一条轴的两侧颜色不同**。
+        /// 这正是平方根最值得亲眼看一次的地方：一道缝。
+        public static Complex PowFraction(Complex z, int num, int den)
+        {
+            if (den <= 1) return Pow(z, num);
+
+            double r = z.Magnitude;
+            double theta = Math.Atan2(z.Imaginary, z.Real);   // (-π, π]
+            double mag = Math.Pow(r, (double)num / den);
+            double ang = theta * num / den;
+            return new Complex(mag * Math.Cos(ang), mag * Math.Sin(ang));
+        }
+
         /// 把 z^n 包成 func 形式，给 RgbForZ / BuildGrid 这类接口用。
         public static Func<Complex, Complex> PowFunc(int n)
         {
             return z => Pow(z, n);
+        }
+
+        public static Func<Complex, Complex> PowFractionFunc(int num, int den)
+        {
+            return z => PowFraction(z, num, den);
         }
 
         const float RingDim = 0.45f;   // 等模环压暗到多少
