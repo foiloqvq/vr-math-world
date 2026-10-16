@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>VR Math World · PC Prototype</title>
+<style>
+  html, body { margin:0; height:100%; overflow:hidden; background:#0b1020; }
+  canvas { display:block; }
+  #hud { position:fixed; left:16px; top:14px; color:#cfe3ff; font:13px/1.6 ui-monospace, Consolas, monospace;
+         text-shadow:0 1px 3px #000; pointer-events:none; user-select:none; }
+  #hud b { color:#9fe6ff; }
+  #near { position:fixed; left:50%; bottom:64px; transform:translateX(-50%); color:#eaf6ff;
+          font:15px/1.5 system-ui, sans-serif; text-shadow:0 1px 4px #000; pointer-events:none; }
+  #start { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+           color:#dceaff; font:16px/1.8 system-ui, sans-serif; background:rgba(6,10,22,.82);
+           text-align:center; cursor:pointer; letter-spacing:.5px; }
+  #start small { color:#8fa9c9; }
+  #crosshair { position:fixed; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px;
+               border-radius:50%; background:rgba(220,235,255,.65); pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="hud">
+  <b>VR Math World</b> · PC prototype<br>
+  W A S D 移动 &nbsp;|&nbsp; 鼠标 转向 &nbsp;|&nbsp; Shift 快跑 &nbsp;|&nbsp; 1/2/3 传送展品 &nbsp;|&nbsp; Esc 松手
+</div>
+<div id="crosshair"></div>
+<div id="near"></div>
+<div id="start">点击进入 &nbsp;·&nbsp; 用鼠标环视<br><small>（VR 版明年设备到了用 WebXR 直接进头显，这套代码不用重写）</small></div>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
