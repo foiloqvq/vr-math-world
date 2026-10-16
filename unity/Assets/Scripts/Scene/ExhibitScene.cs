@@ -33,8 +33,23 @@ public class ExhibitScene : MonoBehaviour
     public float markerHeight = 1.8f;
 
     /// 复变函数颜色映射（数学区 Slot_1）的全部参数。
-    /// 展品的函数据此定：z² —— 绕原点走一圈，辐角翻倍，颜色绕两圈。
-    public static readonly System.Func<Complex, Complex> ComplexExhibitFn = z => z * z;
+    /// **幂次 n 是运行时可变的**：按 `Q` 在 1/2/3/4 之间循环，图版与地砖会立刻重算。
+    /// 眼睛能直接数出来的差别：绕原点走一圈，颜色绕 n 圈（n=1 一圈、n=2 两圈、n=3 三圈）。
+    public const int ComplexPowerDefault = 2;
+    public const int ComplexPowerMax = 4;
+    public KeyCode complexCycleKey = KeyCode.Q;
+    /// 当前幂次（1..ComplexPowerMax）。真身只在这里，函数与贴图都从它派生。
+    public int complexPower = ComplexPowerDefault;
+    /// 展品的函数：z^n。幂函数本体在 **ComplexColor.Pow**（纯数学、可在引擎外被测），
+    /// 这里只是把它接成委托，好让 n 在运行时能变。
+    public System.Func<Complex, Complex> ComplexExhibitFn
+    {
+        get { return ComplexColor.PowFunc(complexPower); }
+    }
+    /// 贴图缓存：4 个幂次各一张，按需生成（第一次切换付一次 ~40ms，之后瞬切）
+    Texture2D[] complexTexCache;
+    Material complexPanelMat;
+    Material complexFloorMat;
     /// 定义域边长（米）与贴图像素（越大越细腻；Awake 里只算一次，测试里有耗时数字）
     public const float ComplexMapSize = 5.2f;
     public const int ComplexMapPixels = 512;
@@ -74,6 +89,7 @@ public class ExhibitScene : MonoBehaviour
         // 踩过的坑：以前是"只补缺的东西"，于是对已有展品的改动永远不会生效。
         ClearGenerated();
         Build();
+        SetComplexPower(complexPower);   // 展品建好后按当前幂次贴一次 + 写 HUD 小字
     }
 
     /// 清掉本节点下由代码生成的子物体（不动场景里手放的 Player 等）
@@ -84,6 +100,51 @@ public class ExhibitScene : MonoBehaviour
             var child = transform.GetChild(i).gameObject;
             if (Application.isPlaying) Destroy(child); else DestroyImmediate(child);
         }
+    }
+
+    /// 只做一件事：按 Q 换幂次。
+    /// 不在这里做别的逻辑 —— 生成全在 Awake，运行时只换"函数 + 贴图"。
+    void Update()
+    {
+        if (complexCycleKey != KeyCode.None && Input.GetKeyDown(complexCycleKey))
+            CycleComplexPower();
+    }
+
+    /// n → 1/2/3/4 → 1 ……（mod 而不是取模，保证 4 之后回到 1）
+    public void CycleComplexPower()
+    {
+        int next = complexPower % ComplexPowerMax + 1;
+        SetComplexPower(next);
+    }
+
+    /// 换幂次：重算/取缓存贴图，同时更新图版与地砖（两处共用同一张，永远同步）。
+    public void SetComplexPower(int n)
+    {
+        complexPower = Mathf.Clamp(n, 1, ComplexPowerMax);
+        if (complexTexCache == null) return;   // 还没生成过展品（编辑器里没 Build）
+        Texture2D tex = ComplexTextureFor(complexPower);
+        if (complexPanelMat != null) MaterialKit.SetMainTexture(complexPanelMat, tex, 1f);
+        if (complexFloorMat != null) MaterialKit.SetMainTexture(complexFloorMat, tex, 1f);
+        if (complexPanelMat != null) MaterialKit.SetEmissionTexture(complexPanelMat, tex, complexMapGlow);
+        if (complexFloorMat != null) MaterialKit.SetEmissionTexture(complexFloorMat, tex, complexMapGlow);
+        UpdateComplexHud();
+    }
+
+    /// 幂次 n 对应的贴图；缓存里没有就现算一张（并缓存，下次瞬切）。
+    Texture2D ComplexTextureFor(int n)
+    {
+        int idx = Mathf.Clamp(n, 1, ComplexPowerMax);
+        if (complexTexCache[idx] == null)
+            complexTexCache[idx] = MakeComplexTexture(ComplexColor.PowFunc(idx), ComplexMapSize, ComplexMapPixels);
+        return complexTexCache[idx];
+    }
+
+    /// 屏幕上的小字：当前是 z 的几次幂 + 怎么换。给 SpeedHud 显示。
+    void UpdateComplexHud()
+    {
+        SpeedHud.ComplexStatus = string.Format(
+            "复变展品：f(z) = z^{0}   —— 按 {1} 换幂次（1→2→3→4）· 绕原点走一圈，颜色就绕 {0} 圈",
+            complexPower, complexCycleKey);
     }
 
     public void Build()
@@ -387,7 +448,15 @@ public class ExhibitScene : MonoBehaviour
     ///      这是这件展品的**体感锚点**：不用先听懂 arg 和 |f|，走一圈就知道了
     void BuildComplexColorMap()
     {
-        Texture2D tex = MakeComplexTexture(ComplexExhibitFn, ComplexMapSize, ComplexMapPixels);
+        // 幂次贴图缓存：4 张按需生成（第一次按 Q 会付一次 ~40ms，之后瞬切）
+        if (complexTexCache == null)
+            complexTexCache = new Texture2D[ComplexPowerMax + 1];
+        // 重新生成世界时把老贴图丢掉（编辑里反复 Play 不会堆垃圾）
+        for (int i = 0; i < complexTexCache.Length; i++)
+        {
+            if (complexTexCache[i] != null) { Destroy(complexTexCache[i]); complexTexCache[i] = null; }
+        }
+        Texture2D tex = ComplexTextureFor(complexPower);
 
         // ---- ① 竖直图版：摆在 Slot_1 的台面上 ----
         var root = new GameObject("Exhibit_ComplexMap");
@@ -400,6 +469,7 @@ public class ExhibitScene : MonoBehaviour
         var panelMat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
         MaterialKit.SetMainTexture(panelMat, tex, 1f);
         MaterialKit.SetEmissionTexture(panelMat, tex, complexMapGlow);
+        complexPanelMat = panelMat;   // 记下来：按 Q 换幂次时要换这张贴图
         var panel = MeshUtil.Spawn("ComplexPanel", MeshMath.PanelXY(ComplexMapSize, 96), panelMat, root.transform);
         // 没有这一步，整块面只会显示一个像素的颜色（MakeMesh 不生成 UV）
         MeshUtil.SetPlanarUVs(panel.GetComponent<MeshFilter>().sharedMesh, 0, 1);
@@ -420,6 +490,7 @@ public class ExhibitScene : MonoBehaviour
         var floorMat = MaterialKit.MakeMaterial(Color.white, 0.10f, 0f);
         MaterialKit.SetMainTexture(floorMat, tex, 1f);
         MaterialKit.SetEmissionTexture(floorMat, tex, complexMapGlow);
+        complexFloorMat = floorMat;   // 同上：两处共用一张贴图，换幂次必须一起换
         var floor = MeshUtil.Spawn("Walk_ComplexPlane",
             MeshMath.ParametricSurface((x, y) => 0f, 13f, 128), floorMat, transform);
         floor.transform.localPosition = new Vector3(MathDistrictOrigin.x, 0.45f, -40f);

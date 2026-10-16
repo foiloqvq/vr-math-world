@@ -145,6 +145,23 @@ class Program
         // 展品本体：w = z²。下面每条断言都对应"你在图版上能看见的一件事"。
         Func<Complex, Complex> sq = z => z * z;
 
+        // 0) 幂次 z^n（按 Q 循环的就是 n=1/2/3/4）：辐角必须正好翻 n 倍
+        for (int exp = 1; exp <= 4; exp++)
+        {
+            Func<Complex, Complex> pow = ComplexColor.PowFunc(exp);
+            Complex w = pow(Complex.ImaginaryOne);          // z=i，辐角 90°
+            double gotDeg = Math.Atan2(w.Imaginary, w.Real) * 180.0 / Math.PI;
+            double expectedDeg = 90.0 * exp;
+            double diff = Math.Abs(((gotDeg - expectedDeg + 540.0) % 360.0) - 180.0);
+            Check(diff < 1e-6, $"z^{exp} 在 z=i 处辐角应为 {expectedDeg:F0}°", $"{gotDeg:F3}°（差 {diff:E3}）");
+        }
+        // n=2 必须与手写的 z*z 逐位一致（换实现不许改变已有展品的颜色）
+        {
+            Complex z0 = new Complex(0.37, -1.24);
+            Complex a = ComplexColor.Pow(z0, 2), b = z0 * z0;
+            Check(a.Real == b.Real && a.Imaginary == b.Imaginary, "z^2 与 z*z 逐位一致", $"{a} vs {b}");
+        }
+
         // 1) 辐角 → 色相
         ComplexColor.RgbForZ(sq, 1f, 0f, out float r1, out float g1, out float b1);
         Check(r1 > g1 && b1 < 0.02f, "z=1 → w=1（辐角 0）取红", $"rgb=({r1:F3},{g1:F3},{b1:F3})");

@@ -8,6 +8,10 @@ public class SpeedHud : MonoBehaviour
     public bool showPosition = true;
     public bool showMascots = true;
 
+    /// 复变展品的当前幂次说明（由 ExhibitScene 写）。静态字符串是刻意的：
+    /// HUD 与展品之间不用互相持有引用，重建世界时也不会留下坏引用。
+    public static string ComplexStatus = "";
+
     Vector3 lastPos;
     float speed;
     MascotFollow[] mascots;
@@ -50,9 +54,12 @@ public class SpeedHud : MonoBehaviour
         GUI.Label(new Rect(16f, 56f, 1300f, 26f),
             "试这件事：按 2 走到莫比乌斯带上，沿中线绕一整圈 —— 回到起点时，上下会翻过来", small);
 
+        if (!string.IsNullOrEmpty(ComplexStatus))
+            GUI.Label(new Rect(16f, 78f, 1300f, 26f), ComplexStatus, small);
+
         if (showMascots && mascots != null)
         {
-            float y = 80f;
+            float y = string.IsNullOrEmpty(ComplexStatus) ? 80f : 102f;
             foreach (var m in mascots)
             {
                 if (m == null) continue;

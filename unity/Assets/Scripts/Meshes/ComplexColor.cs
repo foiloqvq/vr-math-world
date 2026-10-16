@@ -18,6 +18,23 @@ namespace Vmw.Meshes
         /// 取 16 是因为默认展品用 f = z²、定义域 |z| ≤ 3 → |f| 最大 9，留一点余量。
         public const float ReferenceMagnitude = 16f;
 
+        /// 幂函数 z^n（n 为正整数）：展品按 Q 循环的就是这个。
+        /// 用循环乘而不是 Math.Pow —— 复数没有内置幂，而且整数幂用乘法零误差。
+        /// 放在这里（而不是 ExhibitScene）是因为它**不碰 UnityEngine**，
+        /// 引擎外的 33 条断言才能直接测它。
+        public static Complex Pow(Complex z, int n)
+        {
+            Complex acc = Complex.One;
+            for (int i = 0; i < n; i++) acc *= z;
+            return acc;
+        }
+
+        /// 把 z^n 包成 func 形式，给 RgbForZ / BuildGrid 这类接口用。
+        public static Func<Complex, Complex> PowFunc(int n)
+        {
+            return z => Pow(z, n);
+        }
+
         const float RingDim = 0.45f;   // 等模环压暗到多少
         const float RayDim = 0.55f;    // 等辐角射线压暗到多少
 
