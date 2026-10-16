@@ -46,6 +46,40 @@ namespace Vmw.Meshes
             return new MeshData(verts, tris);
         }
 
+        /// 竖直图版：XY 平面上的规则网格（z = 0），**法线朝 +Z**（也就是"正面面朝入口"）。
+        /// 用来挂复变函数的颜色贴图：+X 是实部、+Y 是虚部，正好是高斯平面的朝向。
+        /// 顶点索引与 ParametricSurface 同构（a = i*n + j，这里 i 沿 +X、j 沿 +Y），
+        /// 于是法线 = (b-a)×((a+1)-a) = (+X)×(+Y) = +Z —— 测试里会把这条断言钉死，
+        /// 免得以后改了索引顺序、图版从背面看不见（那种 bug 只能靠肉眼发现）。
+        public static MeshData PanelXY(float size, int segments)
+        {
+            if (segments < 1) throw new ArgumentOutOfRangeException(nameof(segments));
+            int n = segments + 1;
+            var verts = new float[n * n * 3];
+            for (int i = 0; i < n; i++)
+            {
+                float x = -size * 0.5f + size * i / segments;
+                for (int j = 0; j < n; j++)
+                {
+                    float y = -size * 0.5f + size * j / segments;
+                    int k = (i * n + j) * 3;
+                    verts[k] = x;
+                    verts[k + 1] = y;
+                    verts[k + 2] = 0f;
+                }
+            }
+            var tris = new int[segments * segments * 6];
+            int t = 0;
+            for (int i = 0; i < segments; i++)
+            for (int j = 0; j < segments; j++)
+            {
+                int a = i * n + j, b = a + n;
+                tris[t++] = a; tris[t++] = b; tris[t++] = a + 1;
+                tris[t++] = b; tris[t++] = b + 1; tris[t++] = a + 1;
+            }
+            return new MeshData(verts, tris);
+        }
+
         /// 莫比乌斯带的参数方程（唯一真相：网格生成与曲面法线都用它）
         /// P(u,v) = ((R + v·cos(u/2))·cos u, v·sin(u/2), (R + v·cos(u/2))·sin u)
         public static void MobiusPoint(float u, float v, float radius, float halfWidth, out float x, out float y, out float z)

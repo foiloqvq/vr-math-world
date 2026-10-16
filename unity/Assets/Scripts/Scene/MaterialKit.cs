@@ -64,4 +64,14 @@ public static class MaterialKit
         if (m.HasProperty("_BaseMap")) { m.SetTexture("_BaseMap", t); m.SetTextureScale("_BaseMap", scale); }
         if (m.HasProperty("_MainTex")) { m.SetTexture("_MainTex", t); m.SetTextureScale("_MainTex", scale); }
     }
+
+    /// 让贴图自发光 —— 颜色映射那块图版当"屏幕"用：环境光偏暗时，纯反射的贴图会发灰。
+    /// Standard 与 URP Lit 都是 _EmissionMap + _EmissionColor + _EMISSION 关键字，两家通用。
+    /// intensity 放了个旋钮给 foilo 调"亮不亮"（那是他的活儿，不是我的）。
+    public static void SetEmissionTexture(Material m, Texture t, float intensity = 0.85f)
+    {
+        if (m.HasProperty("_EmissionMap")) m.SetTexture("_EmissionMap", t);
+        if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", Color.white * Mathf.Max(0f, intensity));
+        m.EnableKeyword("_EMISSION");
+    }
 }

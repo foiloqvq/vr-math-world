@@ -111,5 +111,26 @@ public static class BuildScene
         { Debug.LogError("[BuildScene] Verify FAILED: 场景里残留旧的 FirstPersonWalker"); EditorApplication.Exit(1); return; }
         if (mascots.Length < 2) { Debug.LogError("[BuildScene] Verify FAILED: 吉祥物不足两只"); EditorApplication.Exit(1); return; }
         if (swims.Length < 2) { Debug.LogError("[BuildScene] Verify FAILED: 吉祥物没挂 MascotSwim"); EditorApplication.Exit(1); return; }
+
+        // 展品：复变函数的颜色映射（数学区 Slot_1 + 可走地砖）。
+        // 这里特意把"顶点 / UV / 贴图"三个数字都报出来 —— 展品最容易静默漏掉或被建出来但没贴图，
+        // 而"贴图没生效"（网格没有 UV）属于只能靠肉眼发现的 bug，值得用一条硬检查挡住。
+        foreach (string name in new[] { "Exhibit_ComplexMap", "Walk_ComplexPlane" })
+        {
+            var go = world.transform.Find(name);
+            if (go == null)
+            { Debug.LogError("[BuildScene] Verify FAILED: 找不到展品 " + name); EditorApplication.Exit(1); return; }
+            var mf = go.GetComponentInChildren<MeshFilter>();
+            var mr = go.GetComponentInChildren<MeshRenderer>();
+            var mesh = mf != null ? mf.sharedMesh : null;
+            bool hasUv = mesh != null && mesh.uv.Length == mesh.vertexCount;
+            bool hasTex = mr != null && mr.sharedMaterial != null && mr.sharedMaterial.mainTexture != null;
+            Debug.Log("[BuildScene] Verify: " + name
+                      + " 顶点=" + (mesh != null ? mesh.vertexCount.ToString() : "null")
+                      + " UV=" + (mesh != null ? mesh.uv.Length.ToString() : "null")
+                      + " 贴图=" + hasTex);
+            if (mesh != null && !hasUv)
+            { Debug.LogError("[BuildScene] Verify FAILED: " + name + " 的网格没有 UV（贴图只会显示一个像素的颜色）"); EditorApplication.Exit(1); return; }
+        }
         Debug.Log("[BuildScene] Verify OK");
     }}

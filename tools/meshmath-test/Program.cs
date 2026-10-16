@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using Vmw.Meshes;
 
 // 在引擎外验证网格数学：装 Unity 之前就能确认几何算对了
@@ -139,6 +140,67 @@ class Program
         }
         Check(driftNew2 < 1e-3f, "新写法：300 帧切向零漂移", string.Format("{0:E2}", driftNew2));
         Check(driftOld2 > 0.05f, "旧写法：确实会漂（对照）", string.Format("{0:F3} m", driftOld2));
+
+        Console.WriteLine("== 复变函数的颜色映射（数学区 Slot_1 的展品） ==");
+        // 展品本体：w = z²。下面每条断言都对应"你在图版上能看见的一件事"。
+        Func<Complex, Complex> sq = z => z * z;
+
+        // 1) 辐角 → 色相
+        ComplexColor.RgbForZ(sq, 1f, 0f, out float r1, out float g1, out float b1);
+        Check(r1 > g1 && b1 < 0.02f, "z=1 → w=1（辐角 0）取红", $"rgb=({r1:F3},{g1:F3},{b1:F3})");
+        ComplexColor.RgbForZ(sq, 0f, 1f, out float r2, out float g2, out float b2);
+        Check(g2 > r2 + 0.05f && b2 > r2 + 0.05f, "z=i → w=-1（辐角 π）取青", $"rgb=({r2:F3},{g2:F3},{b2:F3})");
+
+        // 2) 平方让色环绕两圈：z=1 与 z=-1 必须同色；对照 f=z 时它们是互补色
+        ComplexColor.RgbForZ(sq, -1f, 0f, out float rn, out float gn, out float bn);
+        Check(Math.Abs(rn - r1) < 1e-4f && Math.Abs(bn - b1) < 1e-4f,
+              "f=z²：z=-1 与 z=1 同色（辐角翻倍 → 色环绕两圈）", $"|Δr|={Math.Abs(rn - r1):E2}");
+        ComplexColor.RgbForZ(z => z, -1f, 0f, out float ir, out float ig, out float ib);
+        Check(ib > ir + 0.05f, "对照 f=z：z=-1 是青（对面）—— 所以上一条不是凑巧", $"rgb=({ir:F3},{ig:F3},{ib:F3})");
+
+        // 3) 模 → 明度：越亮的地方模越大；零点最黑
+        ComplexColor.RgbForZ(sq, 0f, 0f, out float rz, out float gz, out float bz);
+        Check(Math.Max(rz, Math.Max(gz, bz)) < 0.10f, "z=0 → w=0：零点最黑", $"max={Math.Max(rz, Math.Max(gz, bz)):F3}");
+        ComplexColor.RgbForZ(z => z, 1.2f, 0f, out float rb, out _, out _);
+        ComplexColor.RgbForZ(z => z, 3.0f, 0f, out float rc, out _, out _);
+        Check(rc > rb, "同一射线上 |w| 越大越亮", $"{rb:F3} → {rc:F3}");
+
+        // 4) 等模环：|w| 正好等于 1（log2=0，环上）应比 |w|=1.2 更暗
+        ComplexColor.RgbForZ(z => z, 1.0f, 0f, out float ring, out _, out _);
+        Check(ring < rb, "|w|=1 落在等模环上（被压暗）", $"{ring:F3} < {rb:F3}");
+
+        // 5) 取色顺序：BuildGrid 第 0 行 = 虚部最小、第 0 列 = 实部最小
+        //    （写反了图就上下颠倒，而这种错只能靠肉眼发现 —— 所以在这里钉死）
+        float[] grid = ComplexColor.BuildGrid(sq, 2f, 4);
+        Check(grid[1] > grid[0] && grid[1] > grid[2],
+              "第 0 行第 0 列 = z=-1-i → w=2i：绿（行 0 是虚部最小）",
+              $"rgb=({grid[0]:F3},{grid[1]:F3},{grid[2]:F3})");
+
+        // 6) 竖直图版：法线必须朝 +Z，否则"正面看不见、只能从背面看"
+        var panel = MeshMath.PanelXY(5.2f, 96);
+        Check(panel.VertexCount == 97 * 97, "图版顶点数 = (seg+1)^2", panel.VertexCount.ToString());
+        Check(panel.TriangleCount == 96 * 96 * 2, "图版三角形数 = seg^2*2", panel.TriangleCount.ToString());
+        Check(MeshMath.IndicesValid(panel), "图版索引全部合法");
+        MeshMath.Bounds(panel, out float pdx, out float pdy, out float pdz);
+        Check(Math.Abs(pdx - 5.2f) < 1e-3f && Math.Abs(pdy - 5.2f) < 1e-3f && Math.Abs(pdz) < 1e-6f,
+              "图版尺寸 = 5.2 × 5.2 × 0", $"{pdx:F3} x {pdy:F3} x {pdz:F3}");
+        int flipped = 0;
+        for (int t = 0; t + 2 < panel.Triangles.Length; t += 3)
+        {
+            int a = panel.Triangles[t] * 3, b = panel.Triangles[t + 1] * 3, c = panel.Triangles[t + 2] * 3;
+            float e1x = panel.Vertices[b] - panel.Vertices[a];
+            float e1y = panel.Vertices[b + 1] - panel.Vertices[a + 1];
+            float e2x = panel.Vertices[c] - panel.Vertices[a];
+            float e2y = panel.Vertices[c + 1] - panel.Vertices[a + 1];
+            float nz = e1x * e2y - e1y * e2x;      // 与 Unity RecalculateNormals 同一套叉积
+            if (nz <= 0f) flipped++;
+        }
+        Check(flipped == 0, $"全部 {panel.TriangleCount} 个三角形法线朝 +Z", $"反例 {flipped}");
+
+        var swTex = System.Diagnostics.Stopwatch.StartNew();
+        ComplexColor.BuildGrid(sq, 5.2f, 512);
+        swTex.Stop();
+        Console.WriteLine($"  [信息] 512×512 取色耗时 {swTex.ElapsedMilliseconds} ms（Awake 里每次只算一次）");
 
         Console.WriteLine();
         Console.WriteLine(fail == 0 ? "全部通过：网格数学可用 ✓" : $"{fail} 项失败 ✗");

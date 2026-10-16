@@ -14,6 +14,7 @@
       新增纯数学文件时，在这里加一行。
       TODO: 将来把纯数学挪到独立目录（如 Assets/Scripts/PureMath），再用通配符。
     -->
+    <Compile Include="../../unity/Assets/Scripts/Meshes/ComplexColor.cs" />
     <Compile Include="../../unity/Assets/Scripts/Meshes/MeshMath.cs" />
     <Compile Include="../../unity/Assets/Scripts/Meshes/SnapMath.cs" />
   </ItemGroup>

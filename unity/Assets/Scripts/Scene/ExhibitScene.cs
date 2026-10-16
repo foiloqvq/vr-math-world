@@ -1,5 +1,6 @@
 using UnityEngine;
 using Vmw.Meshes;
+using Complex = System.Numerics.Complex;
 
 /// 把整个原型场景一键搭出来，并且**能在运行时补齐缺的东西**。
 ///
@@ -30,6 +31,22 @@ public class ExhibitScene : MonoBehaviour
     public int walkSegV = 16;
     public int markerCount = 24;
     public float markerHeight = 1.8f;
+
+    /// 复变函数颜色映射（数学区 Slot_1）的全部参数。
+    /// 展品的函数据此定：z² —— 绕原点走一圈，辐角翻倍，颜色绕两圈。
+    public static readonly System.Func<Complex, Complex> ComplexExhibitFn = z => z * z;
+    /// 定义域边长（米）与贴图像素（越大越细腻；Awake 里只算一次，测试里有耗时数字）
+    public const float ComplexMapSize = 5.2f;
+    public const int ComplexMapPixels = 512;
+    /// 图版与地砖的自发光强度（0 = 只吃环境光）。这一项是给 foilo 调"亮不亮"的旋钮。
+    public float complexMapGlow = 0.85f;
+
+    /// 数学区原点与四个展位的 X 坐标 —— 唯一真相：
+    /// 地皮、展位台子、摆在台子上的展品都从这里取，免得三处各写一份坐标、改一处忘两处。
+    public static readonly Vector3 MathDistrictOrigin = new Vector3(0f, 0f, -46f);
+    public static readonly float[] MathSlotX = { -11.25f, -3.75f, 3.75f, 11.25f };
+    public const float MathSlotLocalZ = -6f;
+    public const float MathSlotTopY = 0.95f;   // 展位台面高度（台子本身见 BuildMathDistrict）
 
     /// 大鱼台词（顺便当展品导览）
     public static readonly string[] BigLines =
@@ -157,6 +174,7 @@ public class ExhibitScene : MonoBehaviour
         BuildDisplayMobius();
         BuildWalkableMobius();
         BuildBlackHole();
+        BuildComplexColorMap();
     }
 
     /// 感知框：平时几乎隐形，人一进来就发亮
@@ -358,13 +376,90 @@ public class ExhibitScene : MonoBehaviour
         go.AddComponent<CompanionControl>();
     }
 
+    /// 数学区 Slot_1 的第一件新展品：**复变函数的颜色映射**。
+    ///
+    /// 颜色怎么来的：色相 = f(z) 的辐角、明度 = |f(z)| 的模（详见 ComplexColor，那是唯一真相）。
+    /// f 取 z²，所以绕原点走一圈，颜色会绕**两圈** —— 这正是它最值得亲眼看一次的地方。
+    ///
+    /// 两处共用同一张贴图（同一个函数、同一条生成路径）：
+    ///   ① 竖直图版：面朝入口，+X 是实部、+Y 是虚部，正好是高斯平面的朝向
+    ///   ② 可走彩色地砖：走到数学区中间那块地上，颜色跟着脚步变 ——
+    ///      这是这件展品的**体感锚点**：不用先听懂 arg 和 |f|，走一圈就知道了
+    void BuildComplexColorMap()
+    {
+        Texture2D tex = MakeComplexTexture(ComplexExhibitFn, ComplexMapSize, ComplexMapPixels);
+
+        // ---- ① 竖直图版：摆在 Slot_1 的台面上 ----
+        var root = new GameObject("Exhibit_ComplexMap");
+        root.transform.SetParent(transform, false);
+        float sx = MathSlotX[0];
+        float sy = MathSlotTopY + ComplexMapSize * 0.5f;
+        float sz = MathDistrictOrigin.z + MathSlotLocalZ;
+        root.transform.localPosition = new Vector3(sx, sy, sz);
+
+        var panelMat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
+        MaterialKit.SetMainTexture(panelMat, tex, 1f);
+        MaterialKit.SetEmissionTexture(panelMat, tex, complexMapGlow);
+        var panel = MeshUtil.Spawn("ComplexPanel", MeshMath.PanelXY(ComplexMapSize, 96), panelMat, root.transform);
+        // 没有这一步，整块面只会显示一个像素的颜色（MakeMesh 不生成 UV）
+        MeshUtil.SetPlanarUVs(panel.GetComponent<MeshFilter>().sharedMesh, 0, 1);
+
+        // 一圈细边框：让它看起来是"一件展品"，而不是一张飘着的纸
+        var frameMat = MaterialKit.MakeMaterial(new Color(0.30f, 0.55f, 0.85f), 0.45f, 0.2f);
+        float h = ComplexMapSize * 0.5f, bar = 0.12f;
+        MakeBar(root.transform, frameMat, new Vector3(0f, h, 0f), new Vector3(ComplexMapSize + bar * 2f, bar, bar));
+        MakeBar(root.transform, frameMat, new Vector3(0f, -h, 0f), new Vector3(ComplexMapSize + bar * 2f, bar, bar));
+        MakeBar(root.transform, frameMat, new Vector3(-h, 0f, 0f), new Vector3(bar, ComplexMapSize, bar));
+        MakeBar(root.transform, frameMat, new Vector3(h, 0f, 0f), new Vector3(bar, ComplexMapSize, bar));
+
+        BuildZone("Exhibit_ComplexMap", new Vector3(sx, sy, sz), new Vector3(3.6f, 3.4f, 3.6f));
+
+        // ---- ② 可走彩色地砖：数学区中间的空地 ----
+        // 抬到 0.45（地皮顶面 0.40）—— 高 5 厘米是为了不跟地皮 Z 打架。
+        // 挂 MeshCollider，人就能站上去（和"可走莫比乌斯带"同一套路）。
+        var floorMat = MaterialKit.MakeMaterial(Color.white, 0.10f, 0f);
+        MaterialKit.SetMainTexture(floorMat, tex, 1f);
+        MaterialKit.SetEmissionTexture(floorMat, tex, complexMapGlow);
+        var floor = MeshUtil.Spawn("Walk_ComplexPlane",
+            MeshMath.ParametricSurface((x, y) => 0f, 13f, 128), floorMat, transform);
+        floor.transform.localPosition = new Vector3(MathDistrictOrigin.x, 0.45f, -40f);
+        var floorMesh = floor.GetComponent<MeshFilter>().sharedMesh;
+        MeshUtil.SetPlanarUVs(floorMesh, 0, 2);
+        floor.AddComponent<MeshCollider>().sharedMesh = floorMesh;
+
+        BuildZone("Exhibit_ComplexMap", new Vector3(MathDistrictOrigin.x, 1.5f, -40f), new Vector3(6.8f, 3f, 6.8f));
+    }
+
+    /// 复变函数的颜色 → 一张贴图。
+    /// 取色与写入顺序都走 ComplexColor.BuildGrid：于是"图上哪里是红"和测试断言的是同一件事，
+    /// 不会出现"函数对了但图上下颠倒"这种只能靠肉眼发现的问题。
+    static Texture2D MakeComplexTexture(System.Func<Complex, Complex> f, float size, int pixels)
+    {
+        float[] rgb = ComplexColor.BuildGrid(f, size, pixels);
+        var cols = new Color32[pixels * pixels];
+        for (int i = 0; i < cols.Length; i++)
+        {
+            cols[i] = new Color32(
+                (byte)Mathf.Clamp(rgb[i * 3] * 255f + 0.5f, 0f, 255f),
+                (byte)Mathf.Clamp(rgb[i * 3 + 1] * 255f + 0.5f, 0f, 255f),
+                (byte)Mathf.Clamp(rgb[i * 3 + 2] * 255f + 0.5f, 0f, 255f),
+                255);
+        }
+        var tex = new Texture2D(pixels, pixels, TextureFormat.RGB24, true);
+        tex.SetPixels32(cols);
+        tex.Apply(true);
+        tex.wrapMode = TextureWrapMode.Clamp;   // 不重复：否则边缘的颜色会串到对面去
+        tex.filterMode = FilterMode.Bilinear;
+        return tex;
+    }
+
     /// 数学区：一块地皮 + 入口框 + 四个空展位（都带感知框，走近会亮）
     /// 以后加一门学科 = 再建一块这样的地 + 往格位上摆展品。
     void BuildMathDistrict()
     {
         var root = new GameObject("District_Math");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(0f, 0f, -46f);
+        root.transform.localPosition = MathDistrictOrigin;
 
         // 地皮
         var pad = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -385,15 +480,15 @@ public class ExhibitScene : MonoBehaviour
         // 四个空展位：小台子 + 各自感知框
         for (int i = 0; i < 4; i++)
         {
-            float x = (i - 1.5f) * 7.5f;
+            float x = MathSlotX[i];
             var slot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             slot.name = "Slot_" + (i + 1);
             slot.transform.SetParent(root.transform, false);
-            slot.transform.localPosition = new Vector3(x, 0.7f, -6f);
+            slot.transform.localPosition = new Vector3(x, 0.7f, MathSlotLocalZ);
             slot.transform.localScale = new Vector3(2.2f, 0.25f, 2.2f);
             slot.GetComponent<MeshRenderer>().sharedMaterial =
                 MaterialKit.MakeMaterial(new Color(0.22f, 0.30f, 0.45f), 0.3f);
-            BuildZone("Slot_" + (i + 1), root.transform.localPosition + new Vector3(x, 2.5f, -6f), new Vector3(3.4f, 3f, 3.4f));
+            BuildZone("Slot_" + (i + 1), root.transform.localPosition + new Vector3(x, 2.5f, MathSlotLocalZ), new Vector3(3.4f, 3f, 3.4f));
         }
     }
 
