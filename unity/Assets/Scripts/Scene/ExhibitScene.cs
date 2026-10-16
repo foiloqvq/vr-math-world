@@ -197,7 +197,22 @@ public class ExhibitScene : MonoBehaviour
     {
         var bh = new GameObject("Exhibit_BlackHole");
         bh.transform.SetParent(transform, false);
-        bh.transform.localPosition = new Vector3(-46f, 18f, 34f);
+        bh.transform.localPosition = new Vector3(-46f, 8.5f, 34f);   // 降到抬头能看清的高度
+
+        // 观景台 + 方框围栏（看得见的"框"），正面留 8 米入口
+        var deck = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        deck.name = "ObservationDeck";
+        deck.transform.SetParent(bh.transform, false);
+        deck.transform.localPosition = new Vector3(0f, -8.3f, 0f);
+        deck.transform.localScale = new Vector3(26f, 0.4f, 26f);
+        deck.GetComponent<MeshRenderer>().sharedMaterial =
+            MaterialKit.MakeMaterial(new Color(0.13f, 0.17f, 0.26f), 0.15f);
+
+        MakeRail(bh.transform, new Vector3(0f, -7.5f, -12.6f), new Vector3(26f, 1.2f, 0.4f));
+        MakeRail(bh.transform, new Vector3(-12.6f, -7.5f, 0f), new Vector3(0.4f, 1.2f, 26f));
+        MakeRail(bh.transform, new Vector3(12.6f, -7.5f, 0f), new Vector3(0.4f, 1.2f, 26f));
+        MakeRail(bh.transform, new Vector3(-9f, -7.5f, 12.6f), new Vector3(8f, 1.2f, 0.4f));
+        MakeRail(bh.transform, new Vector3(9f, -7.5f, 12.6f), new Vector3(8f, 1.2f, 0.4f));
 
         var core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         core.name = "Core";
@@ -215,6 +230,17 @@ public class ExhibitScene : MonoBehaviour
     }
 
     /// 沿带子中心线摆一圈路标（颜色绕色相环变化）
+    static void MakeRail(Transform parent, Vector3 localPos, Vector3 localScale)
+    {
+        var w = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        w.name = "Railing";
+        w.transform.SetParent(parent, false);
+        w.transform.localPosition = localPos;
+        w.transform.localScale = localScale;
+        w.GetComponent<MeshRenderer>().sharedMaterial =
+            MaterialKit.MakeMaterial(new Color(0.42f, 0.62f, 0.92f), 0.3f, 0.1f);
+    }
+
     void BuildLoopMarkers(Transform strip)
     {
         var root = new GameObject("LoopMarkers");
