@@ -1,4 +1,6 @@
 # VR Math World
+
+> **Taking over this project? Read [`docs/NEXT.md`](docs/NEXT.md) first** — current state, next step, paths, verification commands, and pitfalls are all there.
 > An Open-ended Immersive Virtual Space for Mathematical Visualization, Social Interaction and Recreational Exploration
 
 ## Project Overview
