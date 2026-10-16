@@ -47,3 +47,29 @@ dotnet run --project ..\tools\meshmath-test
 `prototype/`（Three.js）定位是**数学内容的快速试验田**：改个函数、刷新浏览器就能看。
 Unity 是**正式引擎**：PC + VR、UGC、社交、性能都走它。展品数学两边共享同一套公式，
 Unity 侧用 `MeshMath.cs`，网页侧用 `main.js` 里对应的生成函数。
+
+## 实测记录（2026-10-16，Unity 6000.0.85f1）
+
+引擎装好后按顺序验证过，全部通过：
+
+| 环节 | 命令 / 证据 |
+| --- | --- |
+| 引擎安装 | `C:\Program Files\Unity 6000.0.85f1\Editor\Unity.exe`（产品版本 `6000.0.85f1_ee7790f1426a`），IL2CPP 模块齐全，占用 8GB |
+| **脚本编译** | `Unity.exe -batchmode -quit -nographics -projectPath <工程> -logFile <日志>` → 退出码 0，日志 0 条 `error CS`；`Library/ScriptAssemblies/Assembly-CSharp.dll` 里能查到 `MeshMath`/`ParametricSurface`/`MobiusStrip`/`ExhibitScene`/`FirstPersonWalker` |
+| **场景生成** | `-executeMethod BuildScene.Generate` → 退出码 0，7 秒产出 `Assets/Scenes/Sandbox.unity`（约 2MB，展品网格已烘进场景） |
+| 引擎外数学 | `dotnet run --project tools/meshmath-test` → 11 项全通过（含莫比乌斯带单面性不变量，偏差 2.4e-7） |
+
+**一条踩坑记录**：`Unity.exe` 是 GUI 子系统程序，PowerShell 里用 `&` 调用**不会等它**——
+第一次调用看起来"秒退"，其实 Unity 在后台继续跑；我又启动第二个实例，同工程抢锁直接崩
+（退出码 `0x40000015`，日志有 crash stacktrace）。正确做法：
+
+```powershell
+Start-Process -FilePath $unity -ArgumentList $args -PassThru -Wait
+```
+
+或者用 `cmd /c start /wait`。**启动 GUI 程序后要先确认它真的结束了，再启第二个。**
+
+## 关于场景文件要不要进 git
+
+**不进。** 场景可以用 `BuildScene.Generate` 确定性地重建（一条命令，7 秒），
+仓库里保留**脚本作为唯一真相**，避免 2MB 场景文件带来的 diff 噪音与合并冲突。
