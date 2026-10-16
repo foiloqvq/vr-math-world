@@ -1,0 +1,6 @@
+# dsh-live-voice 的 bundle 层：只插一行（客户端插件）。
+# 客户端半边由 dsh.client 声明，宿主半边是空模块（见 lib/index.js）。
+- insert:
+    - id: live-voice
+      name: dsh-live-voice
+      config: {}
