@@ -51,20 +51,52 @@ n=1 绕一圈、n=2 绕两圈、n=3 绕三圈，肉眼直接数得出来。这�
 | Unity 编辑器 | `C:\Program Files\Unity 6000.0.85f1\Editor\Unity.exe` |
 | 语音服务 | 桥接 `http://127.0.0.1:7880`（上游一键包 9880，开机自启） |
 
+### 仓库与工程是**同一份文件**（2026-10-17 起，junction 穿透）
+
+以前仓库里只放 `Scripts`/`Editor` 两份副本，每次改代码都要手工同步一遍
+（2026-10-17 那天同步了两次、逐哈希核对 —— 这种"靠人记住"的步骤迟早会漏）。现在：
+
+| 仓库里的 | 实际是 | 指向 |
+| --- | --- | --- |
+| `unity/Assets` | **目录 junction** | `C:\Projects\VRMathWorld\Assets` |
+| `unity/ProjectSettings` | **目录 junction** | `C:\Projects\VRMathWorld\ProjectSettings` |
+| `unity/Packages` | **目录 junction** | `C:\Projects\VRMathWorld\Packages` |
+
+于是：**改代码 = 改工程；改完直接提交推送，没有"同步"这一步了。**
+`C:\Projects\_verify\Assets\{Scripts,Editor}` 也是指向主工程同样两个目录的 junction ——
+所以 headless 验证**永远吃当前代码**，同样不需要同步。
+
+**唯一不进库的是 `unity/Assets/Scenes/`**：`Sandbox.unity` 有 3.9 MB，而且内容 100% 由代码生成，
+提交它只会让每次生成都造一个几 MB 的二进制 diff。
+`.meta` 反过来**必须**进库（缺了它，别人 clone 后 GUID 重排、场景里挂的组件会连错）。
+
+**重新 clone / 换机器后要重建 junction**（git 不记 junction，只会给出真实的文件夹）：
+
+```powershell
+$t = 'C:\Projects\VRMathWorld'; $r = '<仓库>'
+New-Item -ItemType Junction -Path "$r\unity\Assets"          -Target "$t\Assets"
+New-Item -ItemType Junction -Path "$r\unity\ProjectSettings" -Target "$t\ProjectSettings"
+New-Item -ItemType Junction -Path "$r\unity\Packages"        -Target "$t\Packages"
+New-Item -ItemType Junction -Path "C:\Projects\_verify\Assets\Scripts" -Target "$t\Assets\Scripts"
+New-Item -ItemType Junction -Path "C:\Projects\_verify\Assets\Editor"  -Target "$t\Assets\Editor"
+```
+
+⚠️ **绝不带 `-Recurse` 去删 junction**（`Remove-Item -Recurse` / `rm -rf`）—— 那会删到**工程本体**。
+要拆就 `Remove-Item <junction 路径>`（不带 `-Recurse`）或 `cmd /c rmdir <junction 路径>`。
+
 **改完代码的标准验证流程（三条都要过）**：
 
 ```powershell
 # 1) 引擎外的纯数学测试
 dotnet run --project <仓库>\tools\meshmath-test
 
-# 2) 同步到验证工程后编译 + 生成场景
+# 2) 生成场景（_verify 吃的就是主工程的脚本，不用同步）
 Start-Process -FilePath $unity -Wait -ArgumentList @('-batchmode','-quit','-nographics',
   '-projectPath','C:\Projects\_verify','-executeMethod','BuildScene.Generate','-logFile',$log)
-# 3) 自检（会硬检查 SurfaceWalker/吉祥物/等是否在场景里）
+# 3) 自检（硬检查 SurfaceWalker/吉祥物/展品 UV/传送点）
 ... '-executeMethod','BuildScene.Verify' ...
 ```
 
-**通过后才同步到 `C:\Projects\VRMathWorld`，然后提交推送。**
 用户那边只需要：让 Unity 重编译 → **按 Play**（不用点菜单，内容每次会清空重建）。
 
 ## 五、代码地图
@@ -119,6 +151,10 @@ body `{"text":"...","text_lang":"zh"}` → 返回 `audio/wav`（最小 JSON 即�
     按平面投影铺 UV（竖直面 `(0,1)`、地面 `(0,2)`），并且 `Verify` 会把 UV 数硬检查一遍。
 12. **纹理要 `wrapMode = Clamp`**：默认 Repeat 会让图版边缘的颜色从对面串回来，
     在色相绕圈的图上特别显眼（颜色看着"接错了"）。
+13. **junction 不能带 `-Recurse` 删**：仓库里的 `unity/Assets` 是指向工程本体的 junction，
+    `Remove-Item -Recurse` / `rm -rf` 会**直接删掉 `C:\Projects\VRMathWorld\Assets`**（真文件）。
+    拆 junction 用 `Remove-Item <junction 路径>`（不带 -Recurse）或 `cmd /c rmdir <junction 路径>`。
+    同理：`Get-ChildItem -Recurse` 会穿透进工程，扫仓库时要记得这一点。
 
 ## 七、两条公理与工作节奏
 
