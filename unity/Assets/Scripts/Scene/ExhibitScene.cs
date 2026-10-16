@@ -190,6 +190,15 @@ public class ExhibitScene : MonoBehaviour
         smallFollow.followHeight = -0.15f;
         smallFollow.followLerp = 1.6f;           // 慢半拍更可爱
         smallFollow.bobFrequency = 1.3f;
+
+        // 让它们游起来：大鱼慢一点，小鱼快一点，看起来是两条活鱼
+        var bigSwim = big.AddComponent<MascotSwim>();
+        bigSwim.tailFrequency = 1.3f;
+        bigSwim.finFrequency = 1.3f;
+        var smallSwim = small.AddComponent<MascotSwim>();
+        smallSwim.tailFrequency = 1.9f;
+        smallSwim.finFrequency = 1.9f;
+        smallSwim.spoutInterval = 5f;
     }
 
     void BuildHud()

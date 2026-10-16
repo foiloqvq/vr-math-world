@@ -86,10 +86,13 @@ public static class BuildScene
         var walker = Object.FindFirstObjectByType<SurfaceWalker>();
         var cam = Object.FindFirstObjectByType<Camera>();
         var stale = Object.FindFirstObjectByType<FirstPersonWalker>();
+        var mascots = Object.FindObjectsByType<MascotFollow>(FindObjectsSortMode.None);
+        var swims = Object.FindObjectsByType<MascotSwim>(FindObjectsSortMode.None);
         Debug.Log("[BuildScene] Verify: roots=" + scene.rootCount + " objects=" + allObjects + " meshes=" + meshes
                   + " World=" + (world != null) + " Player=" + (player != null)
                   + " SurfaceWalker=" + (walker != null) + " Camera=" + (cam != null)
-                  + (walker != null ? (" preset=" + walker.CurrentPresetName + " eye=" + walker.CurrentEyeHeight.ToString("F2")) : ""));
+                  + (walker != null ? (" preset=" + walker.CurrentPresetName + " eye=" + walker.CurrentEyeHeight.ToString("F2")) : "")
+                  + " 吉祥物=" + mascots.Length + " 游泳=" + swims.Length);
         if (world == null || player == null || meshes < 2)
         { Debug.LogError("[BuildScene] Verify FAILED: 场景内容不全"); EditorApplication.Exit(1); return; }
         // 下面两条是专门防"控制器挂错"这类事故的：曾经因为字符串替换静默失败，
@@ -98,5 +101,7 @@ public static class BuildScene
         { Debug.LogError("[BuildScene] Verify FAILED: Player 上没有 SurfaceWalker"); EditorApplication.Exit(1); return; }
         if (stale != null)
         { Debug.LogError("[BuildScene] Verify FAILED: 场景里残留旧的 FirstPersonWalker"); EditorApplication.Exit(1); return; }
+        if (mascots.Length < 2) { Debug.LogError("[BuildScene] Verify FAILED: 吉祥物不足两只"); EditorApplication.Exit(1); return; }
+        if (swims.Length < 2) { Debug.LogError("[BuildScene] Verify FAILED: 吉祥物没挂 MascotSwim"); EditorApplication.Exit(1); return; }
         Debug.Log("[BuildScene] Verify OK");
     }}
