@@ -12,6 +12,7 @@ public class ExhibitScene : MonoBehaviour
     public bool spawnExhibits = true;
     public bool buildHud = true;
     public bool buildMascots = true;
+    public bool buildCompanion = true;
 
     [Header("脚下网格（给运动提供参照）")]
     public int gridCellsPerTile = 8;
@@ -34,6 +35,7 @@ public class ExhibitScene : MonoBehaviour
         if (buildLights) BuildLights();
         if (spawnExhibits) BuildExhibits();
         if (buildHud) BuildHud();
+        if (buildCompanion) BuildCompanion();
         if (buildMascots) BuildMascots();
     }
 
@@ -199,6 +201,33 @@ public class ExhibitScene : MonoBehaviour
         smallSwim.tailFrequency = 1.9f;
         smallSwim.finFrequency = 1.9f;
         smallSwim.spoutInterval = 5f;
+
+        // 固定词对话（以后换成真正的对话）。台词顺便当展品导览。
+        var bigTalk = big.AddComponent<MascotDialogue>();
+        bigTalk.lines = new[]
+        {
+            "我是大肥鱼。那条小鱼是我妹妹，她跟得慢，你别笑她。",
+            "前面那个曲面是 z 等于 sin(r) 除以 r —— 中间那根尖峰，是 r 趋近 0 时它自己冒出来的。",
+            "右边那条带子只有一个面。你走一整圈回到起点，会发现自己上下翻了，却没跨过任何边缘。",
+            "再往前有个黑洞。它不咬人，只是把光拦住了。",
+            "按 R 可以让我停下来，停在哪里都行 —— 你回来的时候我还在。",
+        };
+        var smallTalk = small.AddComponent<MascotDialogue>();
+        smallTalk.lines = new[]
+        {
+            "……姐姐让我跟着你。",
+            "那个圆圆的洞，掉进去会到哪里呀？",
+            "你走快了我就追不上啦，等等我嘛。",
+            "姐姐懂好多数学，我只会跟着她。",
+        };
+    }
+
+    /// 同伴控制节点（E 说话 / R 停下继续）
+    void BuildCompanion()
+    {
+        var go = new GameObject("Companion");
+        go.transform.SetParent(transform, false);
+        go.AddComponent<CompanionControl>();
     }
 
     void BuildHud()

@@ -42,7 +42,7 @@ public class SpeedHud : MonoBehaviour
         }
         GUI.Label(new Rect(16f, 10f, 1000f, 26f), line1, big);
 
-        string line2 = "W A S D 走  ·  Shift 快跑  ·  空格 跳  ·  鼠标环视  ·  1 / 2 / 3 传送";
+        string line2 = "W A S D 走 · Shift 快跑 · 空格 跳 · E 说话 · R 停下/继续 · 1/2/3 传送 · 鼠标环视";
         if (walker != null)
             line2 += string.Format("    视角 [{0}] {1:F2} m（V）  ·  相机 [{2}]（F5）", walker.CurrentPresetName, walker.CurrentEyeHeight, walker.CurrentCamModeName);
         GUI.Label(new Rect(16f, 34f, 1300f, 26f), line2, small);
