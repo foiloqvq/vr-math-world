@@ -23,12 +23,18 @@ public static class BuildScene
         var exhibit = world.AddComponent<ExhibitScene>();
         exhibit.Build();                       // 编辑器里 Awake 不会跑，所以显式调用
 
-        // 玩家：CharacterController + 第一人称 + 相机
+        // 玩家：曲面行走控制器（能走上莫比乌斯带、能跳、能切视角规格）
         var player = new GameObject("Player");
         player.transform.position = new Vector3(9f, 7.7f, 46f);   // 站在可走莫比乌斯带上
-        var cc = player.AddComponent<CharacterController>();
-        cc.height = 1.7f; cc.radius = 0.3f; cc.center = new Vector3(0f, 0.85f, 0f);
-        player.AddComponent<FirstPersonWalker>();
+        var walker = player.AddComponent<SurfaceWalker>();
+        walker.teleportTargets = new[]
+        {
+            world.transform.Find("Exhibit_Surface"),
+            world.transform.Find("Exhibit_WalkableMobius"),
+            world.transform.Find("Exhibit_Mobius"),
+        };
+        // 注意：不要再挂 FirstPersonWalker / CharacterController ——
+        // 那是"平面简化版"，没有跳跃、视角规格与曲面吸附。Verify() 会检查这一点。
 
         var camGo = new GameObject("Camera");
         camGo.transform.SetParent(player.transform, false);
@@ -77,7 +83,20 @@ public static class BuildScene
         }
         var world = GameObject.Find("World");
         var player = GameObject.Find("Player");
-        Debug.Log("[BuildScene] Verify: roots=" + scene.rootCount + " objects=" + allObjects + " meshes=" + meshes + " World=" + (world != null) + " Player=" + (player != null));
-        if (world == null || player == null || meshes < 2) { Debug.LogError("[BuildScene] Verify FAILED"); EditorApplication.Exit(1); return; }
+        var walker = Object.FindFirstObjectByType<SurfaceWalker>();
+        var cam = Object.FindFirstObjectByType<Camera>();
+        var stale = Object.FindFirstObjectByType<FirstPersonWalker>();
+        Debug.Log("[BuildScene] Verify: roots=" + scene.rootCount + " objects=" + allObjects + " meshes=" + meshes
+                  + " World=" + (world != null) + " Player=" + (player != null)
+                  + " SurfaceWalker=" + (walker != null) + " Camera=" + (cam != null)
+                  + (walker != null ? (" preset=" + walker.CurrentPresetName + " eye=" + walker.CurrentEyeHeight.ToString("F2")) : ""));
+        if (world == null || player == null || meshes < 2)
+        { Debug.LogError("[BuildScene] Verify FAILED: 场景内容不全"); EditorApplication.Exit(1); return; }
+        // 下面两条是专门防"控制器挂错"这类事故的：曾经因为字符串替换静默失败，
+        // 场景里挂的一直是旧的 FirstPersonWalker，导致跳跃 / 视角规格 / 传送全部无效。
+        if (walker == null)
+        { Debug.LogError("[BuildScene] Verify FAILED: Player 上没有 SurfaceWalker"); EditorApplication.Exit(1); return; }
+        if (stale != null)
+        { Debug.LogError("[BuildScene] Verify FAILED: 场景里残留旧的 FirstPersonWalker"); EditorApplication.Exit(1); return; }
         Debug.Log("[BuildScene] Verify OK");
     }}
