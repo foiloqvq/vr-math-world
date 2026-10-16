@@ -90,6 +90,13 @@ class Program
         MeshMath.Bounds(tor, out float tdx, out float tdy, out float tdz);
         Check(Math.Abs(tdx - 2f * (bigR + smallR)) < 1e-2f, "外径 = 2(R+r)", $"{tdx:F2}");
         Check(Math.Abs(tdy - 2f * smallR) < 1e-2f, "厚度 = 2r", $"{tdy:F2}");
+        Console.WriteLine("== 单位椭球（吉祥物积木） ==");
+        var ell = MeshMath.Ellipsoid(48, 24);
+        Check(ell.VertexCount == 49 * 25, "顶点数 = (segU+1)*(segV+1)", ell.VertexCount.ToString());
+        Check(MeshMath.IndicesValid(ell), "索引全部合法");
+        MeshMath.Bounds(ell, out float edx, out float edy, out float edz);
+        Check(Math.Abs(edx - 2f) < 1e-3f && Math.Abs(edy - 2f) < 1e-3f && Math.Abs(edz - 2f) < 1e-3f,
+              "包围盒 = 2（单位半径）", $"{edx:F3} x {edy:F3} x {edz:F3}");
         Console.WriteLine();
         Console.WriteLine(fail == 0 ? "全部通过：网格数学可用 ✓" : $"{fail} 项失败 ✗");
         return fail == 0 ? 0 : 1;

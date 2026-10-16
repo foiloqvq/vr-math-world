@@ -115,6 +115,35 @@ namespace Vmw.Meshes
             }
             return new MeshData(verts, tris);
         }
+        /// 单位椭球（半径 1，UV 球）。缩放交给 Transform —— 吉祥物的身体、鳍、眼睛都用它拼。
+        public static MeshData Ellipsoid(int segU = 48, int segV = 24)
+        {
+            if (segU < 3 || segV < 2) throw new ArgumentOutOfRangeException(nameof(segU));
+            int nv = segV + 1;
+            var verts = new float[(segU + 1) * nv * 3];
+            for (int i = 0; i <= segU; i++)
+            {
+                double u = i / (double)segU * Math.PI * 2.0;
+                for (int j = 0; j <= segV; j++)
+                {
+                    double v = j / (double)segV * Math.PI;
+                    int k = (i * nv + j) * 3;
+                    verts[k] = (float)(Math.Sin(v) * Math.Cos(u));
+                    verts[k + 1] = (float)Math.Cos(v);
+                    verts[k + 2] = (float)(Math.Sin(v) * Math.Sin(u));
+                }
+            }
+            var tris = new int[segU * segV * 6];
+            int t = 0;
+            for (int i = 0; i < segU; i++)
+            for (int j = 0; j < segV; j++)
+            {
+                int a = i * nv + j, b = a + nv;
+                tris[t++] = a; tris[t++] = b; tris[t++] = a + 1;
+                tris[t++] = b; tris[t++] = b + 1; tris[t++] = a + 1;
+            }
+            return new MeshData(verts, tris);
+        }
         /// 包围盒尺寸（用于自检：确认几何形状在预期范围内）
         public static void Bounds(MeshData m, out float dx, out float dy, out float dz)
         {

@@ -11,6 +11,7 @@ public class ExhibitScene : MonoBehaviour
     public bool buildLights = true;
     public bool spawnExhibits = true;
     public bool buildHud = true;
+    public bool buildMascots = true;
 
     [Header("脚下网格（给运动提供参照）")]
     public int gridCellsPerTile = 8;
@@ -33,6 +34,7 @@ public class ExhibitScene : MonoBehaviour
         if (buildLights) BuildLights();
         if (spawnExhibits) BuildExhibits();
         if (buildHud) BuildHud();
+        if (buildMascots) BuildMascots();
     }
 
     void BuildGround()
@@ -167,6 +169,27 @@ public class ExhibitScene : MonoBehaviour
             post.GetComponent<MeshRenderer>().sharedMaterial =
                 MaterialKit.MakeMaterial(Color.HSVToRGB(i / (float)markerCount, 0.55f, 0.95f), 0.3f);
         }
+    }
+
+    /// 两只吉祥物：大鱼跟着玩家，小鱼跟着大鱼（妹妹跟着姐姐）
+    void BuildMascots()
+    {
+        var big = MascotBody.Create("Mascot_BigFish", transform, 1.25f,
+            new Color(0.30f, 0.56f, 0.92f), new Color(0.90f, 0.95f, 1f));
+        big.transform.localPosition = new Vector3(0f, 8.6f, 40f);
+        var bigFollow = big.AddComponent<MascotFollow>();
+        bigFollow.followDistance = 5.5f;
+        bigFollow.followHeight = 2.4f;
+
+        var small = MascotBody.Create("Mascot_SmallFish", transform, 0.62f,
+            new Color(0.58f, 0.82f, 1f), new Color(1f, 0.97f, 0.99f));
+        small.transform.localPosition = new Vector3(1.4f, 7.6f, 37f);
+        var smallFollow = small.AddComponent<MascotFollow>();
+        smallFollow.target = big.transform;      // 妹妹跟着姐姐
+        smallFollow.followDistance = 3.0f;
+        smallFollow.followHeight = -0.15f;
+        smallFollow.followLerp = 1.6f;           // 慢半拍更可爱
+        smallFollow.bobFrequency = 1.3f;
     }
 
     void BuildHud()
