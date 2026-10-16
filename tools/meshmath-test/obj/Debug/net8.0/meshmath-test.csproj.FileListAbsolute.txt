@@ -1,0 +1,15 @@
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\bin\Debug\net8.0\meshmath-test.exe
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\bin\Debug\net8.0\meshmath-test.deps.json
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\bin\Debug\net8.0\meshmath-test.runtimeconfig.json
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\bin\Debug\net8.0\meshmath-test.dll
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\bin\Debug\net8.0\meshmath-test.pdb
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\meshmath-test.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\meshmath-test.AssemblyInfoInputs.cache
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\meshmath-test.AssemblyInfo.cs
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\meshmath-test.csproj.CoreCompileInputs.cache
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\meshmath-test.sourcelink.json
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\meshmath-test.dll
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\refint\meshmath-test.dll
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\meshmath-test.pdb
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\meshmath-test.genruntimeconfig.cache
+C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\tools\meshmath-test\obj\Debug\net8.0\ref\meshmath-test.dll
