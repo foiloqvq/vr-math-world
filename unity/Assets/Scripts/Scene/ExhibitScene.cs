@@ -88,7 +88,23 @@ public class ExhibitScene : MonoBehaviour
         mobius.GetComponent<MeshRenderer>().sharedMaterial =
             MakeMaterial(new Color(0.55f, 0.88f, 1f), 0.30f, 0.40f);
 
-        // 展品 3（待办）：五种柏拉图立体 —— 需要各自的网格生成器，下一轮加
+        // 展品 3：可走上去的莫比乌斯带（半径与宽度都放大，够人走在上面）
+        // 走一圈后你会从"背面"回来：没跨过边缘，但上下翻转 180°
+        var walk = new GameObject("Exhibit_WalkableMobius");
+        walk.transform.SetParent(transform, false);
+        walk.transform.localPosition = new Vector3(0f, 6f, 46f);
+        var wm = walk.AddComponent<MobiusStrip>();
+        wm.radius = 9f;
+        wm.halfWidth = 2.5f;
+        wm.segmentsU = 320;
+        wm.segmentsV = 16;
+        wm.Rebuild();
+        walk.GetComponent<MeshRenderer>().sharedMaterial =
+            MakeMaterial(new Color(0.62f, 0.86f, 1f), 0.25f, 0.30f);
+        var wcol = walk.AddComponent<MeshCollider>();
+        wcol.sharedMesh = walk.GetComponent<MeshFilter>().sharedMesh;
+
+        // 展品 4（待办）：五种柏拉图立体 —— 需要各自的网格生成器，下一轮加
         // 说明见 unity/README.md 的 TODO
     }
 }

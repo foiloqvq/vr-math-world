@@ -25,14 +25,14 @@ public static class BuildScene
 
         // 玩家：CharacterController + 第一人称 + 相机
         var player = new GameObject("Player");
-        player.transform.position = new Vector3(0f, 1.7f, 12f);
+        player.transform.position = new Vector3(9f, 7.7f, 46f);   // 站在可走莫比乌斯带上
         var cc = player.AddComponent<CharacterController>();
         cc.height = 1.7f; cc.radius = 0.3f; cc.center = new Vector3(0f, 0.85f, 0f);
         player.AddComponent<FirstPersonWalker>();
 
         var camGo = new GameObject("Camera");
         camGo.transform.SetParent(player.transform, false);
-        camGo.transform.localPosition = new Vector3(0f, 0.75f, 0f);
+        camGo.transform.localPosition = new Vector3(0f, 0f, 0f);   // SurfaceWalker 直接控制相机朝向
         var cam = camGo.AddComponent<Camera>();
         cam.tag = "MainCamera";
         cam.nearClipPlane = 0.05f;
@@ -62,4 +62,22 @@ public static class BuildScene
         if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
             EditorApplication.Exit(1);
     }
-}
+
+    /// 打开生成的场景并核对内容（headless 自检用）
+    public static void Verify()
+    {
+        if (!File.Exists(ScenePath)) { Debug.LogError("[BuildScene] scene missing: " + ScenePath); EditorApplication.Exit(1); return; }
+        Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        int allObjects = 0, meshes = 0;
+        foreach (GameObject go in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+        {
+            allObjects++;
+            var mf = go.GetComponent<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null) meshes++;
+        }
+        var world = GameObject.Find("World");
+        var player = GameObject.Find("Player");
+        Debug.Log("[BuildScene] Verify: roots=" + scene.rootCount + " objects=" + allObjects + " meshes=" + meshes + " World=" + (world != null) + " Player=" + (player != null));
+        if (world == null || player == null || meshes < 2) { Debug.LogError("[BuildScene] Verify FAILED"); EditorApplication.Exit(1); return; }
+        Debug.Log("[BuildScene] Verify OK");
+    }}

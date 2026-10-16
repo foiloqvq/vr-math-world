@@ -46,6 +46,16 @@ namespace Vmw.Meshes
             return new MeshData(verts, tris);
         }
 
+        /// 莫比乌斯带的参数方程（唯一真相：网格生成与曲面法线都用它）
+        /// P(u,v) = ((R + v·cos(u/2))·cos u, v·sin(u/2), (R + v·cos(u/2))·sin u)
+        public static void MobiusPoint(float u, float v, float radius, float halfWidth, out float x, out float y, out float z)
+        {
+            double r = radius + v * Math.Cos(u * 0.5);
+            x = (float)(r * Math.Cos(u));
+            y = (float)(v * Math.Sin(u * 0.5));
+            z = (float)(r * Math.Sin(u));
+        }
+
         /// 莫比乌斯带：参数曲面手工建网格（只有一个面，走一圈会翻到背面）
         public static MeshData MobiusStrip(float radius, float halfWidth, int segU, int segV)
         {
@@ -54,15 +64,12 @@ namespace Vmw.Meshes
             var verts = new float[(segU + 1) * nv * 3];
             for (int i = 0; i <= segU; i++)
             {
-                double u = i / (double)segU * Math.PI * 2.0;
+                float u = (float)(i / (double)segU * Math.PI * 2.0);
                 for (int j = 0; j <= segV; j++)
                 {
                     float v = (j / (float)segV - 0.5f) * 2f * halfWidth;
-                    double r = radius + v * Math.Cos(u * 0.5);
                     int k = (i * nv + j) * 3;
-                    verts[k] = (float)(r * Math.Cos(u));
-                    verts[k + 1] = (float)(v * Math.Sin(u * 0.5));
-                    verts[k + 2] = (float)(r * Math.Sin(u));
+                    MobiusPoint(u, v, radius, halfWidth, out verts[k], out verts[k + 1], out verts[k + 2]);
                 }
             }
             var tris = new int[segU * segV * 6];
