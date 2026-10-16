@@ -55,6 +55,8 @@ public class SurfaceWalker : MonoBehaviour
 
     [Header("传送（1/2/3）")]
     public Transform[] teleportTargets;
+    // 场景内容每次运行都会重建，序列化的引用会指向已销毁对象 —— 所以按键时按名字重解析
+    public string[] teleportTargetNames = { "Exhibit_Surface", "Exhibit_WalkableMobius", "Exhibit_Mobius" };
 
     Vector3 up = Vector3.up;
     Vector3 fwd = Vector3.forward;
@@ -121,6 +123,21 @@ public class SurfaceWalker : MonoBehaviour
     }
 
     public void ApplyCamMode() { if (body != null) body.gameObject.SetActive(camMode != CamMode.FirstPerson); }
+
+    /// 按名字重新解析传送目标（内容重建后老引用会失效）
+    public void ResolveTeleportTargets()
+    {
+        var list = new System.Collections.Generic.List<Transform>();
+        if (teleportTargetNames != null)
+            foreach (string n in teleportTargetNames)
+            {
+                var go = GameObject.Find(n);
+                if (go != null) list.Add(go.transform);
+            }
+        if (list.Count == 0 && teleportTargets != null)
+            foreach (var tr in teleportTargets) if (tr != null) list.Add(tr);
+        teleportTargets = list.ToArray();
+    }
 
     void Update()
     {
@@ -248,11 +265,17 @@ public class SurfaceWalker : MonoBehaviour
         }
 
         // ---- 1/2/3 传送 ----
+        bool k1 = Input.GetKeyDown(KeyCode.Alpha1);
+        bool k2 = Input.GetKeyDown(KeyCode.Alpha2);
+        bool k3 = Input.GetKeyDown(KeyCode.Alpha3);
+        if (k1 || k2 || k3) ResolveTeleportTargets();
+
         if (teleportTargets != null)
         {
             for (int i = 0; i < teleportTargets.Length && i < 3; i++)
             {
-                if (Input.GetKeyDown(KeyCode.Alpha1 + i) && teleportTargets[i] != null)
+                bool pressed = (i == 0 && k1) || (i == 1 && k2) || (i == 2 && k3);
+                if (pressed && teleportTargets[i] != null)
                 {
                     transform.position = teleportTargets[i].position + Vector3.up * (playerHeight + 0.3f);
                     up = Vector3.up;
