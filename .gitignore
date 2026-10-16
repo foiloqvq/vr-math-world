@@ -1,0 +1,22 @@
+
+
+# --- .NET / C# 构建产物 ---
+**/bin/
+**/obj/
+*.dll
+*.pdb
+*.exe
+*.cache
+project.assets.json
+*.nuget.g.props
+*.nuget.g.targets
+
+# --- Unity 兜底（unity/.gitignore 里也有更细的规则） ---
+unity/[Ll]ibrary/
+unity/[Tt]emp/
+unity/[Oo]bj/
+unity/[Bb]uild/
+unity/[Ll]ogs/
+unity/[Uu]serSettings/
+[Dd]ebug/
+[Rr]elease/
