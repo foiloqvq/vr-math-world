@@ -2,12 +2,14 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
-/// 固定词对话：走近按 E，它用本机那套八千代语音说一句，同时显示字幕。
-/// 语音走本机桥接服务（默认 http://127.0.0.1:7880）。服务不在也不影响功能 ——
-/// 只显示字幕，并把错误显示在屏幕上，方便排查。
+/// 对话与讲解：走近按 E。
+/// - 展品旁边：念该展品的讲解（多句，按 E 逐句推进），并转头看向它
+/// - 空地：说自己的固定台词
+/// 语音走本机桥接（默认 http://127.0.0.1:7880）。服务不在也不影响功能 ——
+/// 只显示字幕，并把错误显示出来。
 public class MascotDialogue : MonoBehaviour
 {
-    [Header("台词（固定词，按顺序循环）")]
+    [Header("闲聊台词（固定词，按顺序循环）")]
     [TextArea] public string[] lines;
 
     [Header("语音服务")]
@@ -20,11 +22,17 @@ public class MascotDialogue : MonoBehaviour
     public float secondsPerChar = 0.18f;
 
     AudioSource src;
+    MascotFollow follow;
     int lineIndex;
     string subtitle = "";
     float subtitleUntil;
     string lastError = "";
     bool speaking;
+
+    string[] queue;
+    int queueIndex;
+    string queueExhibit;
+    Transform lookTarget;
 
     [System.Serializable]
     class TtsRequest { public string text; public string text_lang; }
@@ -41,16 +49,43 @@ public class MascotDialogue : MonoBehaviour
         src.minDistance = 2f;
         src.maxDistance = 40f;
         src.playOnAwake = false;
+        follow = GetComponent<MascotFollow>();
     }
 
-    /// 说下一句
+    void Update()
+    {
+        // 字幕结束后，把"看向展品"收回来（讲解时才有这个动作）
+        if (follow != null && Time.time >= subtitleUntil && follow.lookAtOverride != null)
+            follow.lookAtOverride = null;
+    }
+
+    /// 闲聊一句
     public void Speak()
     {
         if (lines == null || lines.Length == 0) return;
-        string line = lines[lineIndex % lines.Length];
+        queueExhibit = null;
+        SpeakLine(lines[lineIndex % lines.Length]);
         lineIndex++;
+    }
+
+    /// 讲解某件展品（多句，连续按 E 逐句推进），并转头看向它
+    public bool SpeakExhibit(string exhibitName, Transform exhibit)
+    {
+        var text = Narration.For(exhibitName);
+        if (text.Length == 0) return false;
+        if (queueExhibit != exhibitName) { queue = text; queueIndex = 0; queueExhibit = exhibitName; }
+        if (queueIndex >= queue.Length) queueIndex = 0;      // 一轮念完，从头再来
+        lookTarget = exhibit;
+        SpeakLine(queue[queueIndex]);
+        queueIndex++;
+        return true;
+    }
+
+    void SpeakLine(string line)
+    {
         subtitle = line;
         subtitleUntil = Time.time + Mathf.Max(minSubtitleSeconds, line.Length * secondsPerChar);
+        if (follow != null) follow.lookAtOverride = lookTarget;   // 说话时看向展品
         if (useTts && !speaking) StartCoroutine(TtsRoutine(line));
     }
 

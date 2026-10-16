@@ -239,10 +239,10 @@ public class ExhibitScene : MonoBehaviour
     {
         var big = MascotBody.Create("Mascot_BigFish", transform, 1.25f,
             new Color(0.30f, 0.56f, 0.92f), new Color(0.90f, 0.95f, 1f));
-        big.transform.localPosition = new Vector3(0f, 8.6f, 40f);
+        big.transform.localPosition = new Vector3(0f, 2.6f, 40f);
         var bigFollow = big.AddComponent<MascotFollow>();
         bigFollow.followDistance = 5.5f;
-        bigFollow.followHeight = 1.9f;
+        bigFollow.followHeight = 1.3f;   // 与主角相近高度，不再飘在天上
         var bigSwim = big.AddComponent<MascotSwim>();
         bigSwim.tailFrequency = 1.3f;
         bigSwim.finFrequency = 1.3f;
@@ -251,11 +251,11 @@ public class ExhibitScene : MonoBehaviour
 
         var small = MascotBody.Create("Mascot_SmallFish", transform, 0.62f,
             new Color(0.58f, 0.82f, 1f), new Color(1f, 0.97f, 0.99f));
-        small.transform.localPosition = new Vector3(1.4f, 7.6f, 37f);
+        small.transform.localPosition = new Vector3(1.4f, 2.4f, 37f);
         var smallFollow = small.AddComponent<MascotFollow>();
         smallFollow.target = big.transform;      // 妹妹跟着姐姐
         smallFollow.followDistance = 3.0f;
-        smallFollow.followHeight = -0.15f;
+        smallFollow.followHeight = -0.2f;
         smallFollow.followLerp = 1.6f;
         smallFollow.bobFrequency = 1.3f;
         var smallSwim = small.AddComponent<MascotSwim>();
