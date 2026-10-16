@@ -16,6 +16,7 @@ public class ExhibitScene : MonoBehaviour
     public bool buildHud = true;
     public bool buildMascots = true;
     public bool buildCompanion = true;
+    public bool buildDistricts = true;
 
     [Header("脚下网格（给运动提供参照）")]
     public int gridCellsPerTile = 8;
@@ -74,6 +75,7 @@ public class ExhibitScene : MonoBehaviour
         if (buildGround) BuildGround();
         if (buildLights) BuildLights();
         if (spawnExhibits) BuildExhibits();
+        if (buildDistricts) BuildMathDistrict();
         if (buildMascots) BuildMascots();
         if (buildCompanion) BuildCompanion();
         if (buildHud) BuildHud();
@@ -354,6 +356,45 @@ public class ExhibitScene : MonoBehaviour
         var go = new GameObject("Companion");
         go.transform.SetParent(transform, false);
         go.AddComponent<CompanionControl>();
+    }
+
+    /// 数学区：一块地皮 + 入口框 + 四个空展位（都带感知框，走近会亮）
+    /// 以后加一门学科 = 再建一块这样的地 + 往格位上摆展品。
+    void BuildMathDistrict()
+    {
+        var root = new GameObject("District_Math");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(0f, 0f, -46f);
+
+        // 地皮
+        var pad = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        pad.name = "Pad";
+        pad.transform.SetParent(root.transform, false);
+        pad.transform.localPosition = new Vector3(0f, 0.2f, 0f);
+        pad.transform.localScale = new Vector3(34f, 0.4f, 26f);
+        pad.GetComponent<MeshRenderer>().sharedMaterial =
+            MaterialKit.MakeMaterial(new Color(0.11f, 0.15f, 0.24f), 0.15f);
+
+        // 入口框（四根立柱 + 顶横梁），走近会亮
+        var frameMat = MaterialKit.MakeMaterial(new Color(0.35f, 0.75f, 1f), 0.55f, 0.1f);
+        MakeBar(root.transform, frameMat, new Vector3(-7f, 3f, 13.2f), new Vector3(0.35f, 6f, 0.35f));
+        MakeBar(root.transform, frameMat, new Vector3(7f, 3f, 13.2f), new Vector3(0.35f, 6f, 0.35f));
+        MakeBar(root.transform, frameMat, new Vector3(0f, 6f, 13.2f), new Vector3(14.4f, 0.4f, 0.4f));
+        BuildZone("MathDistrict", new Vector3(0f, 2.5f, -32.8f), new Vector3(17f, 5f, 13f));
+
+        // 四个空展位：小台子 + 各自感知框
+        for (int i = 0; i < 4; i++)
+        {
+            float x = (i - 1.5f) * 7.5f;
+            var slot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            slot.name = "Slot_" + (i + 1);
+            slot.transform.SetParent(root.transform, false);
+            slot.transform.localPosition = new Vector3(x, 0.7f, -6f);
+            slot.transform.localScale = new Vector3(2.2f, 0.25f, 2.2f);
+            slot.GetComponent<MeshRenderer>().sharedMaterial =
+                MaterialKit.MakeMaterial(new Color(0.22f, 0.30f, 0.45f), 0.3f);
+            BuildZone("Slot_" + (i + 1), root.transform.localPosition + new Vector3(x, 2.5f, -6f), new Vector3(3.4f, 3f, 3.4f));
+        }
     }
 
     void BuildHud()
