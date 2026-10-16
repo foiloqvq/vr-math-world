@@ -51,12 +51,26 @@ public class ExhibitScene : MonoBehaviour
 
     void Awake()
     {
-        if (transform.childCount == 0) Build();   // 完全空的世界：整套搭出来
-        else EnsureRuntimeParts();                // 旧场景：只补缺的部分
+        // 内容全部由代码定义，场景只当容器 —— 所以每次开始运行都清掉旧内容重建。
+        // 这样改了代码（哪怕只是给某件展品加了个台子）也不必手动重新生成场景。
+        // 踩过的坑：以前是"只补缺的东西"，于是对已有展品的改动永远不会生效。
+        ClearGenerated();
+        Build();
+    }
+
+    /// 清掉本节点下由代码生成的子物体（不动场景里手放的 Player 等）
+    void ClearGenerated()
+    {
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            var child = transform.GetChild(i).gameObject;
+            if (Application.isPlaying) Destroy(child); else DestroyImmediate(child);
+        }
     }
 
     public void Build()
     {
+        if (transform.childCount > 0) ClearGenerated();   // 保证与代码一致，不会叠加
         if (buildGround) BuildGround();
         if (buildLights) BuildLights();
         if (spawnExhibits) BuildExhibits();
