@@ -32,6 +32,7 @@ public static class BuildScene
             world.transform.Find("Exhibit_Surface"),
             world.transform.Find("Exhibit_WalkableMobius"),
             world.transform.Find("Exhibit_Mobius"),
+            world.transform.Find("Teleport_Math"),        // 按 4：数学区（落在彩色地砖上，面朝图版）
         };
         // 注意：不要再挂 FirstPersonWalker / CharacterController ——
         // 那是"平面简化版"，没有跳跃、视角规格与曲面吸附。Verify() 会检查这一点。
@@ -132,5 +133,20 @@ public static class BuildScene
             if (mesh != null && !hasUv)
             { Debug.LogError("[BuildScene] Verify FAILED: " + name + " 的网格没有 UV（贴图只会显示一个像素的颜色）"); EditorApplication.Exit(1); return; }
         }
+        // 传送点：数学区（按 4）。落地朝向由 Teleport_Math 自己的 rotation 决定，
+        // 所以这里把它的角度也报出来（180° = 面朝 Slot_1 的图版，而不是背对着）。
+        // 同时也数一遍传送目标：这条专防"加了键但目标没挂上"（1/2/3 失灵过类似的坑）。
+        var teleport = world.transform.Find("Teleport_Math");
+        if (teleport == null)
+        { Debug.LogError("[BuildScene] Verify FAILED: 找不到数学区传送点 Teleport_Math"); EditorApplication.Exit(1); return; }
+        int targets = 0;
+        if (walker.teleportTargets != null)
+            foreach (var t in walker.teleportTargets) if (t != null) targets++;
+        Debug.Log("[BuildScene] Verify: Teleport_Math 位置=" + teleport.position.ToString("F1")
+                  + " 朝向=" + teleport.eulerAngles.y.ToString("F0") + "° · 传送目标=" + targets + " 个");
+        if (targets < 4)
+        { Debug.LogError("[BuildScene] Verify FAILED: 传送目标只有 " + targets + " 个（应为 4）"); EditorApplication.Exit(1); return; }
+
         Debug.Log("[BuildScene] Verify OK");
-    }}
+    }
+}

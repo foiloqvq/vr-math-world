@@ -53,10 +53,10 @@ public class SurfaceWalker : MonoBehaviour
     public float baseFov = 70f;
     public float runFov = 78f;
 
-    [Header("传送（1/2/3）")]
+    [Header("传送（1/2/3/4）")]
     public Transform[] teleportTargets;
     // 场景内容每次运行都会重建，序列化的引用会指向已销毁对象 —— 所以按键时按名字重解析
-    public string[] teleportTargetNames = { "Exhibit_Surface", "Exhibit_WalkableMobius", "Exhibit_Mobius" };
+    public string[] teleportTargetNames = { "Exhibit_Surface", "Exhibit_WalkableMobius", "Exhibit_Mobius", "Teleport_Math" };
 
     Vector3 up = Vector3.up;
     Vector3 fwd = Vector3.forward;
@@ -264,23 +264,27 @@ public class SurfaceWalker : MonoBehaviour
             }
         }
 
-        // ---- 1/2/3 传送 ----
+        // ---- 1/2/3/4 传送 ----
         bool k1 = Input.GetKeyDown(KeyCode.Alpha1);
         bool k2 = Input.GetKeyDown(KeyCode.Alpha2);
         bool k3 = Input.GetKeyDown(KeyCode.Alpha3);
-        if (k1 || k2 || k3) ResolveTeleportTargets();
+        bool k4 = Input.GetKeyDown(KeyCode.Alpha4);
+        if (k1 || k2 || k3 || k4) ResolveTeleportTargets();
 
         if (teleportTargets != null)
         {
-            for (int i = 0; i < teleportTargets.Length && i < 3; i++)
+            for (int i = 0; i < teleportTargets.Length && i < 4; i++)
             {
-                bool pressed = (i == 0 && k1) || (i == 1 && k2) || (i == 2 && k3);
+                bool pressed = (i == 0 && k1) || (i == 1 && k2) || (i == 2 && k3) || (i == 3 && k4);
                 if (pressed && teleportTargets[i] != null)
                 {
                     transform.position = teleportTargets[i].position + Vector3.up * (playerHeight + 0.3f);
                     up = Vector3.up;
                     velocity = Vector3.zero;
-                    fwd = Vector3.forward;
+                    // 目标自己朝哪儿，落地就往哪儿看 —— 这样放个空物体转个身就能决定"到达时的第一眼"。
+                    // （数学区的传送点是转过 180° 的，落地正好面朝 Slot_1 那块图版，而不是背对着它。）
+                    fwd = teleportTargets[i].forward;
+                    if (fwd.sqrMagnitude < 0.5f) fwd = Vector3.forward;
                     pitch = -10f;
                     airborne = true;
                 }

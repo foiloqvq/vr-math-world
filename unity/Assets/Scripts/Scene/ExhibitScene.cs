@@ -428,6 +428,14 @@ public class ExhibitScene : MonoBehaviour
         floor.AddComponent<MeshCollider>().sharedMesh = floorMesh;
 
         BuildZone("Exhibit_ComplexMap", new Vector3(MathDistrictOrigin.x, 1.5f, -40f), new Vector3(6.8f, 3f, 6.8f));
+
+        // 传送点（按 4 到达）：站在彩色地砖当中、面朝 Slot_1 的图版。
+        // 这是个转过 180° 的空物体 —— SurfaceWalker 按"目标自己朝哪儿"决定落地朝向，
+        // 这样落地第一眼就是图版，而不是背对着它。（数学区离出生点 92 米，走过来的话太久了。）
+        var teleport = new GameObject("Teleport_Math");
+        teleport.transform.SetParent(transform, false);
+        teleport.transform.localPosition = new Vector3(MathDistrictOrigin.x, 0.6f, -40f);
+        teleport.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
     }
 
     /// 复变函数的颜色 → 一张贴图。
