@@ -21,6 +21,17 @@ unity/[Uu]serSettings/
 [Dd]ebug/
 [Rr]elease/
 
+# --- Unity 工程：仓库里是"工程本体"（junction 穿透），不再有第二份副本 ---
+# unity/Assets、unity/ProjectSettings、unity/Packages 是指向 C:\Projects\VRMathWorld 的
+# **目录 junction**（2026-10-17 定）：改代码 = 改工程，那个"改完记得同步"的步骤就此消失。
+# 换机器/重新 clone 时 junction 不会跟着来 —— 按 docs/NEXT.md 第四节重建即可。
+# 注意：`.meta` **必须**进仓库（缺了它别人 clone 后 GUID 会重排、场景里挂的组件会连错）。
+
+# 唯一的例外：**场景不进库**。Sandbox.unity 有 3.9 MB，而且内容 100% 由代码生成
+# （菜单「VRMathWorld/生成沙盒场景」或 headless 一条命令就能重建），
+# 提交它只会让每次生成都造一个几 MB 的二进制 diff。
+unity/Assets/Scenes/
+
 # --- C/C++ 构建产物（CMake / Ninja / MSVC）---
 # 根因：示例工程一旦在本地跑过 cmake，就会在 build/ 里生成一堆机器相关的产物，
 # 提交上去既没意义、又会让别人的构建缓存打架。
