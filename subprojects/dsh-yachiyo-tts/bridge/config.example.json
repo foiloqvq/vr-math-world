@@ -1,0 +1,21 @@
+{
+    "port":  7880,
+    "upstream":  "http://127.0.0.1:9880",
+    "token":  "\u003c本地生成，写在 bridge/token.txt，不要提交\u003e",
+    "voiceName":  "月见八千代（内置）",
+    "textLang":  "zh",
+    "upstreamTextLimit":  3000,
+    "retry429Seconds":  240,
+    "postProcess":  {
+                        "enabled":  true,
+                        "ffmpeg":  "C:\\yachiyo-tts\\engine\\ffmpeg.exe",
+                        "filter":  "highpass=f=70,volume=5dB,alimiter=limit=0.85:level=disabled"
+                    },
+    "synthOptions":  {
+                         "text_split_method":  "cut0",
+                         "fragment_interval":  0.05,
+                         "speed_factor":  1.08,
+                         "fallbackTextSplitMethod":  "cut1",
+                         "super_sampling":  true
+                     }
+}

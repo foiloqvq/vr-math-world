@@ -1,0 +1,23 @@
+# 本地秘密与运行数据，绝不提交
+bridge/config.json
+bridge/token.txt
+bridge/*.log
+*.log
+logs/
+data/
+
+# 第三方语音模型与音源（版权/体积原因不收录）
+*.pth
+*.ckpt
+*.index
+*.wav
+*.mp3
+*.m4s
+*.onnx
+
+# 运行环境
+runtime/
+engine/
+node_modules/
+__pycache__/
+*.pyc

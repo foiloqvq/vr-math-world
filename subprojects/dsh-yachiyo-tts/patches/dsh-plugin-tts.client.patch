@@ -1,0 +1,11 @@
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -1118,7 +1118,7 @@
+           if (typeof data.autoRead === "boolean") shared.autoRead = data.autoRead;
+           if (typeof data.voice === "string") shared.voice = data.voice;
+           if (data.provider === "edge-tts" || data.provider === "rvc" || data.provider === "index-tts2" || data.provider === "cosyvoice" || data.provider === "google-cloud-tts")
+-            shared.provider = data.provider;
++            shared.provider = (data.provider === "rvc" ? "index-tts2" : data.provider); /* PATCHED_BY_DSH: yachiyo bridge(7880) replaces RVC; restore with client.js.orig-backup */
+           if (typeof data.rvcAutoFallback === "boolean")
+             shared.rvcAutoFallback = data.rvcAutoFallback;
+           if (typeof data.rawMarkdown === "boolean")

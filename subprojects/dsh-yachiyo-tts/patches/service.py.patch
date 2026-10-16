@@ -1,0 +1,47 @@
+--- a/app/service.py
++++ b/app/service.py
+@@ -1,5 +1,6 @@
+ """Restricted loopback API with fixed Yachiyo voice and browser CORS/PNA support."""
+ import json
++import re
+ import asyncio
+ import os
+ import runpy
+@@ -107,6 +108,37 @@
+                         prompt_text=PROMPT, prompt_lang='ja', media_type='wav',
+                         streaming_mode=False, parallel_infer=False, batch_size=1,
+                         text_split_method='cut5')
++            # DSH-PATCH: 从桥接层开放几个语气/质量参数（全部夹紧到安全区间）
++            _opts = {}
++            try:
++                if params.get('speed_factor') is not None:
++                    _opts['speed_factor'] = min(max(float(params['speed_factor']), 0.5), 2.0)
++                if params.get('temperature') is not None:
++                    _opts['temperature'] = min(max(float(params['temperature']), 0.1), 1.5)
++                if params.get('sample_steps') is not None:
++                    _opts['sample_steps'] = min(max(int(params['sample_steps']), 8), 64)
++                if params.get('super_sampling') is not None:
++                    _opts['super_sampling'] = bool(params['super_sampling'])
++                if params.get('seed') is not None:
++                    _opts['seed'] = int(params['seed'])
++                _tsm = params.get('text_split_method')
++                if isinstance(_tsm, str) and re.match(r'^(auto_)?cut[0-5]$', _tsm):
++                    _opts['text_split_method'] = _tsm
++                if params.get('fragment_interval') is not None:
++                    _opts['fragment_interval'] = min(max(float(params['fragment_interval']), 0.0), 1.0)
++                _ref = params.get('ref_audio_path')
++                if isinstance(_ref, str) and _ref:
++                    _safe = os.path.basename(_ref)
++                    if _safe in ('cankao.wav', 'ref-video.wav'):
++                        _opts['ref_audio_path'] = 'reference/' + _safe
++                if params.get('prompt_text') is not None:
++                    _opts['prompt_text'] = str(params['prompt_text'])[:300]
++                if params.get('prompt_lang') in ('ja','zh','en','auto'):
++                    _opts['prompt_lang'] = params['prompt_lang']
++            except (TypeError, ValueError):
++                _opts = {}
++            if _opts:
++                data.update(**_opts)
+             return asyncio.run(handler(data))
+         finally:
+             lock.release()
