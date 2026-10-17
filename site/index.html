@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VR Math World · 一座可以走进去读的数学世界</title>
+<meta name="description" content="VR Math World：一个能走进去读的数学世界。复变函数的颜色、黎曼面、分数地砖、斜率斜坡，全部由代码生成。">
+<style>
+  :root{
+    --bg:#0a0e18; --panel:#111827; --line:#1f2a44;
+    --fg:#dfe9ff; --dim:#8ea0be; --accent:#4f8cff; --cyan:#6ee6eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#16294d 0%,var(--bg) 60%);
+       color:var(--fg);font:16px/1.75 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+  a{color:var(--cyan);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1040px;margin:0 auto;padding:56px 22px 80px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  .brand{font-size:20px;letter-spacing:.08em;color:var(--dim)}
+  .brand b{color:var(--fg);letter-spacing:.02em}
+  h1{font-size:clamp(30px,5vw,52px);line-height:1.25;margin:36px 0 10px;letter-spacing:.01em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .lead{color:var(--dim);font-size:18px;margin:0 0 34px}
+  .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;align-items:center;
+        border:1px solid var(--line);border-radius:18px;padding:22px;background:rgba(17,24,39,.6)}
+  .hero img{width:100%;border-radius:12px;display:block}
+  .btnrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+  .btn{display:inline-block;padding:11px 20px;border-radius:999px;border:1px solid var(--accent);
+       color:#fff;background:linear-gradient(180deg,#3f7df0,#2d5fd0);font-weight:600}
+  .btn.ghost{background:transparent;color:var(--cyan);border-color:var(--line)}
+  section{margin-top:64px}
+  h2{font-size:24px;margin:0 0 8px;letter-spacing:.02em}
+  .sub{color:var(--dim);margin:0 0 22px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+  .card{border:1px solid var(--line);border-radius:14px;padding:18px;background:rgba(17,24,39,.55)}
+  .card h3{margin:0 0 8px;font-size:17px}
+  .card p{margin:0;color:var(--dim);font-size:14px}
+  .tag{display:inline-block;font-size:12px;color:var(--cyan);border:1px solid var(--line);
+       border-radius:999px;padding:2px 10px;margin:0 6px 6px 0}
+  .expr{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .expr figure{margin:0;text-align:center}
+  .expr img{width:100%;border-radius:12px;border:1px solid var(--line);background:#0f1626}
+  .expr figcaption{color:var(--dim);font-size:13px;margin-top:6px}
+  footer{margin-top:70px;border-top:1px solid var(--line);padding-top:22px;color:var(--dim);font-size:14px}
+  .sig{color:var(--cyan)}
+  @media (max-width:720px){.hero{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand"><b>VR Math World</b> · 数学世界</div>
+    <div><a href="https://www.bilibili.com/video/BV1BrJi6SEL1/" target="_blank" rel="noopener">看第一支视频 →</a></div>
+  </header>
+
+  <h1>一座<em>可以走进去读</em>的<br>数学世界</h1>
+  <p class="lead">不是看视频学数学，是用脚踩出来：绕原点走一圈，颜色会绕好几圈；√z 要卷两圈才回得来；斜率是腿上使的劲。</p>
+
+  <div class="hero">
+    <div>
+      <span class="tag">Unity</span><span class="tag">VR</span><span class="tag">代码生成</span><span class="tag">AI 伙伴</span>
+      <p style="margin:14px 0 0;color:var(--dim)">
+        这个世界的每一件东西都是代码长出来的 —— 地面、展品、光，还有那个会说话的家伙。
+        它现在还不大，但每天在长。
+      </p>
+      <div class="btnrow">
+        <a class="btn" href="https://www.bilibili.com/video/BV1BrJi6SEL1/" target="_blank" rel="noopener">▶ 看视频（B站）</a>
+        <a class="btn ghost" href="https://github.com/foiloqvq/vr-math-world" target="_blank" rel="noopener">源码（GitHub）</a>
+      </div>
+    </div>
+    <img src="assets/cover.png" alt="EP01 封面：可以走进去的数学世界">
+  </div>
+
+  <section>
+    <h2>已经能走进去的四个东西</h2>
+    <p class="sub">都在同一个场景里，按 4 传送过去。</p>
+    <div class="grid">
+      <div class="card"><h3>① 复变图版</h3><p>按 Q 换幂次：z → √z → z² → z³。颜色绕几圈，就是几次幂；√z 有分支切。</p></div>
+      <div class="card"><h3>② 黎曼面</h3><p>螺旋带，绕一圈换一片叶子，绕两圈才回到原处 —— √z 的两个答案就长这样。</p></div>
+      <div class="card"><h3>③ 分数地砖</h3><p>三行一样长，切 2/3/4 份。数一数缝，就知道分母越大每份越小。</p></div>
+      <div class="card"><h3>④ 一次函数斜坡</h3><p>三条坡，k=0.25 / 0.5 / 0.75。斜率不是数字，是爬上去累不累。</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>大肥鱼</h2>
+    <p class="sub">这个世界的另一个作者。会写代码，会说话，会给自己画立绘。</p>
+    <div class="expr">
+      <figure><img src="assets/mascot-happy.png" alt="开心"><figcaption>开心</figcaption></figure>
+      <figure><img src="assets/mascot-proud.png" alt="得意"><figcaption>得意</figcaption></figure>
+      <figure><img src="assets/mascot-confused.png" alt="困惑"><figcaption>困惑</figcaption></figure>
+      <figure><img src="assets/mascot-shy.png" alt="害羞"><figcaption>害羞</figcaption></figure>
+      <figure><img src="assets/mascot-tired.png" alt="疲惫"><figcaption>疲惫</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>怎么参与</h2>
+    <div class="grid">
+      <div class="card"><h3>看更新</h3><p>B 站「foiloqvq」；视频简介里会放群号。</p></div>
+      <div class="card"><h3>提想法</h3><p>在 GitHub 开 issue（哪件展品不好懂、想看什么）。</p></div>
+      <div class="card"><h3>一起做</h3><p>会画画 / 会建模 / 会写 shader 的都缺。</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>视频由 <span class="sig">大肥鱼（AI 助手）</span> 协助制作与发布，内容含 AI 生成部分。</p>
+    <p>© 2026 foiloqvq · 世界还在长</p>
+  </footer>
+
+</div>
+</body>
+</html>
