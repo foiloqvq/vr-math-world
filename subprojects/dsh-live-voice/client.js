@@ -331,14 +331,15 @@ window.__ModuleLoader__.load({
         if (!navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           throw new Error('当前环境不支持麦克风')
         }
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            channelCount: 1,
-          },
-        })
+        const audioConstraints = {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        }
+        // 指定设备（App 侧会尽量挑掉"虚拟音频设备/立体声混音"这类没有声音的输入）
+        if (o.deviceId) audioConstraints.deviceId = { exact: o.deviceId }
+        stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints })
         const AC = window.AudioContext || window.webkitAudioContext
         actx = new AC({ sampleRate: 16000 })
         if (actx.state === 'suspended') { try { await actx.resume() } catch (e) {} }
@@ -415,7 +416,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.08'
+    const BUILD = '2026-10-17.09'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -584,10 +585,38 @@ window.__ModuleLoader__.load({
         return out
       }
 
+      /**
+       * 挑一个"真的在收音"的麦克风。
+       *
+       * 为什么需要：Windows 上常有一堆假输入 —— 「立体声混音」「虚拟音频设备」「CABLE」，
+       * 浏览器默认可能偏偏选中它们，于是永远是 0 电平（foilo 说的"一直静音"）。
+       * 这里按标签排除这些，取第一个看起来是真的。
+       */
+      const pickMicDevice = async () => {
+        try {
+          if (!navigator.mediaDevices) return ''
+          const devs = await navigator.mediaDevices.enumerateDevices()
+          const mics = devs.filter((d) => d.kind === 'audioinput' && d.deviceId)
+          const bad = /虚拟|virtual|立体声混音|stereo mix|loopback|cable|vb-audio|voicemeeter|obs/i
+          const good = mics.filter((m) => m.label && !bad.test(m.label))
+          const pick = good[0] || mics.find((m) => m.deviceId === 'default') || mics[0]
+          if (!pick) return ''
+          micDeviceId = pick.deviceId || ''
+          micLabel = pick.label || '(无名称)'
+          pushDiag('mic-pick', micLabel + (good.length ? '' : '（没找到明显真实的，退回第一个）'))
+          return micDeviceId
+        } catch (e) {
+          pushDiag('mic-pick-error', e && e.message ? e.message : String(e))
+          return ''
+        }
+      }
+
       let runtime = null
       let audio = null
       let lastReply = ''
       let busy = false
+      let micDeviceId = ''
+      let micLabel = ''
       let actionsRef = { inputActions: null }
       let activeSessionId = ''
       let speakChain = Promise.resolve()
@@ -822,6 +851,11 @@ window.__ModuleLoader__.load({
         try {
           await withTimeout(micSelfCheck(), 1500, ['设备查询超时（继续启动麦克风）'])
         } catch (e) {}
+        // 挑一个真的在收音的麦克风（排除"立体声混音/虚拟音频设备"这类 0 电平的假输入）
+        let pickedDevice = ''
+        try {
+          pickedDevice = await withTimeout(pickMicDevice(), 1500, '')
+        } catch (e) {}
         try {
           if (!runtime) {
             runtime = createRuntime({
@@ -831,6 +865,7 @@ window.__ModuleLoader__.load({
               calibrationMs: cfg.calibrationMs,
               threshold: cfg.threshold,
               absFloor: cfg.absFloor,
+              deviceId: pickedDevice,
               onEvent: (ev) => {
                 if (ev.type === 'listening') {
                   pushDiag('listening', 'rate=' + ev.sampleRate + ' state=' + ev.state + ' track=' + ev.trackLabel)
@@ -978,6 +1013,7 @@ window.__ModuleLoader__.load({
           state.error ? '错误：' + state.error : (active ? '正在通话' : '点一下开始通话'),
           '阶段：' + state.phase,
           '设备：' + deviceInfo,
+          micLabel ? ('当前麦克风：' + micLabel) : '',
           deviceOk ? '' : '⚠ 这台机器上没查到麦克风',
           state.level ? ('电平：rms=' + Number(state.level.rms).toFixed(4) + ' 说话中=' + (state.level.voiceNow ? '是' : '否')) : '',
           '',
@@ -1053,8 +1089,12 @@ window.__ModuleLoader__.load({
           resumeListening()
         }
         const voiceNow = (now - (s.lastVoiceAt || 0)) < 600
+        // 显示用的"有声"判据比断句门限更低：门限是"算一句"的标准，显示是"我确实看到电平了"。
+        // 分开之后，用户能立刻区分"麦克风没声音"和"门限太高"（2026-10-17 foilo 报"一直静音"）。
+        const floorNow = s.floor === null || s.floor === undefined ? 0 : s.floor
+        const displayVoice = voiceNow || s.lastRms > Math.max(floorNow * 1.4, 0.0012)
         // 轻量刷新（只更新界面用的电平/是否检测到说话），不写日志
-        patch({ level: { rms: s.lastRms, peak: s.peak, floor: s.floor, voiceNow, at: now } })
+        patch({ level: { rms: s.lastRms, peak: s.peak, floor: s.floor, voiceNow: displayVoice, at: now } })
         if (now - lastTick < 2000) return
         lastTick = now
         pushDiag('level', 'rms=' + s.lastRms.toFixed(4) + ' peak=' + s.peak.toFixed(4) +
