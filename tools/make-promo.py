@@ -232,7 +232,9 @@ def pick_encoder():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--out", default=os.path.join(os.path.expanduser("~"), "Videos", "大肥鱼作品",
+                                              "EP01-走进数学世界.mp4"),
+                    help="输出 mp4；默认存到「视频/大肥鱼作品」，方便 foilo 直接上传")
     ap.add_argument("--audio", default="docs/video/audio")
     args = ap.parse_args()
 
