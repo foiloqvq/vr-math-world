@@ -147,6 +147,21 @@ public static class BuildScene
         if (slopeCount != 3 || slopeColliders != 3)
         { Debug.LogError("[BuildScene] Verify FAILED: 斜坡应为 3 条且都带 MeshCollider（否则走不上去）"); EditorApplication.Exit(1); return; }
 
+        // 展位台子：必须够大、而且是方块碰撞（圆柱原语的胶囊在非均匀缩放下顶面覆盖不全，
+        // 曾在 Slot_2/3/4 造成"踩上去掉下去"。这条硬检查专防回归。）
+        for (int i = 1; i <= 4; i++)
+        {
+            var slot = world.transform.Find("District_Math/Slot_" + i);
+            if (slot == null)
+            { Debug.LogError("[BuildScene] Verify FAILED: 找不到展位台子 Slot_" + i); EditorApplication.Exit(1); return; }
+            bool box = slot.GetComponent<BoxCollider>() != null;
+            bool big = slot.localScale.x >= 3.4f;
+            Debug.Log("[BuildScene] Verify: Slot_" + i + " 直径=" + slot.localScale.x.ToString("F1")
+                      + " 方块碰撞=" + box);
+            if (!box || !big)
+            { Debug.LogError("[BuildScene] Verify FAILED: Slot_" + i + " 台子太小或碰撞体不是方块（会掉下去）"); EditorApplication.Exit(1); return; }
+        }
+
         // 传送点：数学区（按 4）。落地朝向由 Teleport_Math 自己的 rotation 决定，
         // 所以这里把它的角度也报出来（180° = 面朝 Slot_1 的图版，而不是背对着）。
         // 同时也数一遍传送目标：这条专防"加了键但目标没挂上"（1/2/3 失灵过类似的坑）。

@@ -70,6 +70,13 @@ public class SurfaceWalker : MonoBehaviour
     Camera cam;
     Transform body;
 
+    /// 掉到多低算"掉进虚空"（世界坐标 Y）。低于它就把人送回最后一次站稳的地方。
+    /// 为什么要这条：台子边缘、单面网格的缝、斜面顶端都可能让人掉出去 ——
+    /// 一掉就无限下落、只能重开，体验极差。有个"安全网"就不会卡死。
+    public float voidRespawnY = -3f;
+    Vector3 lastSafePos;
+    bool hasSafePos;
+
     void Awake()
     {
         cam = GetComponentInChildren<Camera>();
@@ -230,6 +237,21 @@ public class SurfaceWalker : MonoBehaviour
             // 否则会一直带着"倒挂"的取向，最后卡在地面底下
             up = Vector3.Slerp(up, Vector3.up, Mathf.Clamp01(Time.deltaTime * 1.5f)).normalized;
             if (velocity.magnitude > 60f) velocity = velocity.normalized * 60f;
+        }
+
+        // ---- 虚空安全网：低于阈值就把人送回最后站稳的地方 ----
+        // 记住"最后站稳的位置"：只在真正踩实（有地面、不在空中）时更新。
+        if (grounded && !airborne)
+        {
+            lastSafePos = transform.position;
+            hasSafePos = true;
+        }
+        if (transform.position.y < voidRespawnY && hasSafePos)
+        {
+            transform.position = lastSafePos + Vector3.up * 0.1f;
+            velocity = Vector3.zero;
+            airborne = false;
+            up = Vector3.up;
         }
 
         // ---- 相机 ----
