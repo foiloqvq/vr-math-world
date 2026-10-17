@@ -61,6 +61,27 @@
 **硬检查（防回归）**：`Verify` 现在逐个检查 Slot_1..4 —— 直径必须 ≥ 3.4 且必须是 `BoxCollider`，
 否则 `FAILED`。当前输出：`Slot_1..4 直径=3.6 方块碰撞=True`。
 
+### 一次事故，两个症状：FBX 轴转换（2026-10-17，foilo 复现后确认已修）
+
+**现象**：① 展位圆盘"立起来"（像拱门）② 直着走会往右偏。
+
+**根因只有一个**：美术资产接进来时，我在 `Instantiate` 之后写了
+`slot.transform.localRotation = Quaternion.identity` —— 而 FBX 的 **Z-up → Y-up 转换
+就存在那根根节点旋转里**，被我抹掉了。于是圆柱轴从 Y 变成 Z（症状①）；
+踩在这种躺倒圆盘的**斜面**上，`SurfaceWalker` 会把 `up` 掰向斜面法线，
+前方向投影到斜面上就变成弧线（症状②）。
+
+**修法**：不再动那根旋转；碰撞体改挂 Renderer 那一层、用 `localBounds` 自动贴合。
+批处理下另外主动打开 `ModelImporter.bakeAxisConversion`（`[InitializeOnLoad]` 的 delayCall
+在 `-executeMethod` 里来不及跑，所以写进 `BuildScene.EnsureArtImportSettings()`）。
+
+**防回归**：`Verify` 新增**高度断言** —— 台子高 > 1.2 m 就判定"躺倒"并 `FAILED`。
+现在 `Slot_1..4 宽=3.58m 高=0.50m（模型）`。
+
+**经验**：**一个 bug 修好可以带走两个症状**。当时差点去改移动代码（症状②），
+幸好先让 HUD 打出「上向量/输入轴」才看清是斜面的锅。→ **先量，再改**（老规矩又赢一次）。
+
+
 ### Slot_3 / Slot_4 也摆上了（2026-10-17，A 方案「先试水」）
 
 **Slot_3 · 分数地砖**（`Exhibit_Fractions`）：三行**一样长**的地砖，分别切成 **2 / 3 / 4 份**
