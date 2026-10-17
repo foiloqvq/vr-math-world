@@ -57,9 +57,14 @@ public class SpeedHud : MonoBehaviour
         if (!string.IsNullOrEmpty(ComplexStatus))
             GUI.Label(new Rect(16f, 78f, 1300f, 26f), ComplexStatus, small);
 
+        // 调试行（上向量 / 输入轴）：走路方向怪的时候先看这行 ——
+        // 上向量应是 (0.00,1.00,0.00)；输入 H 在只按 W 时应为 0.0
+        if (walker != null && !string.IsNullOrEmpty(walker.DebugLine))
+            GUI.Label(new Rect(16f, 100f, 1300f, 24f), walker.DebugLine, small);
+
         if (showMascots && mascots != null)
         {
-            float y = string.IsNullOrEmpty(ComplexStatus) ? 80f : 102f;
+            float y = 124f;
             foreach (var m in mascots)
             {
                 if (m == null) continue;

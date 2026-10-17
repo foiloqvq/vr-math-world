@@ -77,6 +77,11 @@ public class SurfaceWalker : MonoBehaviour
     Vector3 lastSafePos;
     bool hasSafePos;
 
+    /// 给 HUD 看的调试行：上向量 + 输入轴。
+    /// 为什么要它："直着走却往右偏"可能是「视角的上方向歪了」也可能是「输入带了横向分量」，
+    /// 光看画面分不清；把这两个数字摆出来，一眼就知道该修哪边（2026-10-17 加）。
+    public string DebugLine { get; private set; } = "";
+
     void Awake()
     {
         cam = GetComponentInChildren<Camera>();
@@ -253,6 +258,10 @@ public class SurfaceWalker : MonoBehaviour
             airborne = false;
             up = Vector3.up;
         }
+
+        // HUD 用的调试数字（上向量越接近 (0,1,0) 越正；输入轴里 H 应该常为 0 才算干净）
+        DebugLine = string.Format("上=({0:F2},{1:F2},{2:F2}) 输入 H={3:F1} V={4:F1} 贴地={5}",
+            up.x, up.y, up.z, Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"), grounded);
 
         // ---- 相机 ----
         if (cam != null)

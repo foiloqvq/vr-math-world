@@ -13,9 +13,26 @@ public static class BuildScene
     const string SceneDir = "Assets/Scenes";
     const string ScenePath = "Assets/Scenes/Sandbox.unity";
 
+    /// 美术资产的导入设置（幂等）。批处理模式下 [InitializeOnLoad] 的 delayCall 不一定来得及跑，
+    /// 所以在 Generate/Verify 开头主动修一次：FBX 必须开「Bake Axis Conversion」，
+    /// 否则 Blender 的 Z-up 原样进来 → 圆柱躺倒（foilo 看到的"圆盘立起来"）。
+    static void EnsureArtImportSettings()
+    {
+        foreach (string path in new[] { "Assets/Resources/Art/SlotPedestal.fbx" })
+        {
+            var importer = AssetImporter.GetAtPath(path) as ModelImporter;
+            if (importer == null) continue;
+            if (importer.bakeAxisConversion) continue;
+            importer.bakeAxisConversion = true;
+            importer.SaveAndReimport();
+            Debug.Log("[BuildScene] 已开启 Bake Axis Conversion: " + path);
+        }
+    }
+
     [MenuItem("VRMathWorld/生成沙盒场景")]
     public static void Generate()
     {
+        EnsureArtImportSettings();
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
         // 世界：地面 + 光照 + 展品
@@ -81,6 +98,7 @@ public static class BuildScene
     /// 打开生成的场景并核对内容（headless 自检用）
     public static void Verify()
     {
+        EnsureArtImportSettings();
         if (!File.Exists(ScenePath)) { Debug.LogError("[BuildScene] scene missing: " + ScenePath); EditorApplication.Exit(1); return; }
         Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         int allObjects = 0, meshes = 0;
@@ -163,10 +181,15 @@ public static class BuildScene
             var mf = slot.GetComponentInChildren<MeshFilter>();
             string meshName = (mf != null && mf.sharedMesh != null) ? mf.sharedMesh.name : "";
             bool fromModel = meshName.IndexOf("SlotPedestal", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            float height = rend != null ? rend.bounds.size.y : 0f;
             Debug.Log("[BuildScene] Verify: Slot_" + i + " 宽=" + width.ToString("F2")
-                      + "m 方块碰撞=" + box + (fromModel ? "（模型）" : "（程序化）"));
+                      + "m 高=" + height.ToString("F2") + "m 方块碰撞=" + box
+                      + (fromModel ? "（模型）" : "（程序化）"));
             if (!box || width < 3.4f)
             { Debug.LogError("[BuildScene] Verify FAILED: Slot_" + i + " 台子太小或碰撞体不是方块（会掉下去）"); EditorApplication.Exit(1); return; }
+            // 高度必须≈0.5（一个矮台子）。如果 ≈3.6，说明模型躺倒了（Fbx 的 Z-up 没转换）。
+            if (height > 1.2f)
+            { Debug.LogError("[BuildScene] Verify FAILED: Slot_" + i + " 高=" + height.ToString("F2") + "m —— 模型躺倒了（Y/Z 轴没转换）"); EditorApplication.Exit(1); return; }
             // 美术资产存在却没用上 = 流水线断了（glb 那次就是静默退化成程序化圆柱），必须报错
             var artAsset = Resources.Load<GameObject>("Art/SlotPedestal");
             if (artAsset != null && !fromModel)

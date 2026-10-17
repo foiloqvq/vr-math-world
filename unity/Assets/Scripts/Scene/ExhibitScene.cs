@@ -812,12 +812,14 @@ public class ExhibitScene : MonoBehaviour
                 slot = Instantiate(pedestalArt, root.transform);
                 slot.name = "Slot_" + (i + 1);
                 slot.transform.localPosition = new Vector3(x, 0.7f, MathSlotLocalZ);
-                slot.transform.localRotation = Quaternion.identity;
+                // **不要**把 localRotation 归零：FBX 自带的 Z-up→Y-up 转换就存在根节点旋转里，
+                // 归零之后圆柱会躺倒（foilo 报的"圆盘立起来"，2026-10-17 踩的坑）。
                 var r = slot.GetComponentInChildren<Renderer>();
-                var fit = slot.AddComponent<BoxCollider>();
                 if (r != null)
                 {
-                    // 用模型自己的包围盒，别手写数字：以后 foilo 改模型高矮，碰撞会自动跟着
+                    // 碰撞体挂在有 Renderer 的那一层，用模型自己的包围盒（改模型高矮不用改代码）
+                    var fit = r.gameObject.GetComponent<BoxCollider>();
+                    if (fit == null) fit = r.gameObject.AddComponent<BoxCollider>();
                     fit.center = r.localBounds.center;
                     fit.size = r.localBounds.size;
                 }
