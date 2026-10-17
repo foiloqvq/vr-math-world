@@ -15,6 +15,14 @@ public static class MeshUtil
             v[i] = new Vector3(data.Vertices[i * 3], data.Vertices[i * 3 + 1], data.Vertices[i * 3 + 2]);
         mesh.vertices = v;
         mesh.triangles = data.Triangles;
+        // 曲面自带 UV 时直接用（黎曼面这类"绕圈的参数"必须自带，平面投影会把它抹平）
+        if (data.Uvs != null && data.Uvs.Length == data.VertexCount * 2)
+        {
+            var uv = new Vector2[data.VertexCount];
+            for (int i = 0; i < uv.Length; i++)
+                uv[i] = new Vector2(data.Uvs[i * 2], data.Uvs[i * 2 + 1]);
+            mesh.uv = uv;
+        }
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
         return mesh;

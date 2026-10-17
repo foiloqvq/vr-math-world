@@ -116,7 +116,7 @@ public static class BuildScene
         // 展品：复变函数的颜色映射（数学区 Slot_1 + 可走地砖）。
         // 这里特意把"顶点 / UV / 贴图"三个数字都报出来 —— 展品最容易静默漏掉或被建出来但没贴图，
         // 而"贴图没生效"（网格没有 UV）属于只能靠肉眼发现的 bug，值得用一条硬检查挡住。
-        foreach (string name in new[] { "Exhibit_ComplexMap", "Walk_ComplexPlane" })
+        foreach (string name in new[] { "Exhibit_ComplexMap", "Walk_ComplexPlane", "Exhibit_RiemannSqrt" })
         {
             var go = world.transform.Find(name);
             if (go == null)

@@ -268,6 +268,81 @@ public class ExhibitScene : MonoBehaviour
         BuildWalkableMobius();
         BuildBlackHole();
         BuildComplexColorMap();
+        BuildRiemannSurface();
+    }
+
+    // =====================================================================
+    // Slot_2：黎曼面（√z 的两片叶子）
+    // =====================================================================
+
+    /// 黎曼面带：一条绕两圈的螺旋带。绕一圈 → 换到另一片叶子；绕两圈 → 回到原来那片。
+    /// 参数与 Slot_1 的复变图版一致（唯一真相在 ComplexColor），颜色由 √z 的辐角决定，
+    /// 所以两圈下来色相正好转完整一圈 —— 接缝处颜色是连续的（有断言钉着）。
+    public const float RiemannRadiusInner = 0.35f;
+    public const float RiemannRadiusOuter = 1.60f;
+    public const int RiemannTurns = 2;
+    public const float RiemannHeightPerTurn = 0.35f;
+    public const int RiemannSegU = 240;
+    public const int RiemannSegV = 12;
+    public const int RiemannTexWidth = 512;
+    public const int RiemannTexHeight = 128;
+    public float riemannGlow = 0.7f;
+
+    void BuildRiemannSurface()
+    {
+        Texture2D tex = MakeRiemannTexture(RiemannTexWidth, RiemannTexHeight,
+                                            RiemannRadiusInner, RiemannRadiusOuter, RiemannTurns);
+        MeshData data = MeshMath.RiemannHelix(RiemannRadiusInner, RiemannRadiusOuter,
+                                             RiemannHeightPerTurn, RiemannTurns, RiemannSegU, RiemannSegV);
+
+        var root = new GameObject("Exhibit_RiemannSqrt");
+        root.transform.SetParent(transform, false);
+        // 摆在 Slot_2 的台面上（Slot_1 摆了复变图版，Slot_2 摆这件立体的）
+        float x = MathSlotX[1];
+        float y = MathSlotTopY;
+        float z = MathDistrictOrigin.z + MathSlotLocalZ;
+        root.transform.localPosition = new Vector3(x, y, z);
+
+        var mat = MaterialKit.MakeMaterial(Color.white, 0.15f, 0f);
+        MaterialKit.SetMainTexture(mat, tex, 1f);
+        MaterialKit.SetEmissionTexture(mat, tex, riemannGlow);
+        var band = MeshUtil.Spawn("RiemannBand", data, mat, root.transform);
+        // UV 自带（螺旋的绕角参数必须自己带 UV），所以**不要**再 SetPlanarUVs —— 那会把它抹平
+        var mesh = band.GetComponent<MeshFilter>().sharedMesh;
+        band.AddComponent<MeshCollider>().sharedMesh = mesh;   // 能站上去
+
+        BuildZone("Exhibit_RiemannSqrt", new Vector3(x, y + 0.5f, z), new Vector3(3.2f, 2.4f, 3.2f));
+    }
+
+    /// 黎曼面带贴图：横轴是绕角 u ∈ [0, turns·2π]，纵轴是半径。
+    /// 每个像素都真的算一次 z = r·e^{iu} → w = √z → ComplexColor 取色（与图版同一套规则）。
+    static Texture2D MakeRiemannTexture(int w, int h, float rIn, float rOut, int turns)
+    {
+        var cols = new Color32[w * h];
+        float span = turns * 2f * Mathf.PI;
+        for (int j = 0; j < h; j++)
+        {
+            float t = (j + 0.5f) / h;
+            float r = rIn + (rOut - rIn) * t;
+            for (int i = 0; i < w; i++)
+            {
+                float u = span * (i + 0.5f) / w;
+                var z = new Complex(r * Mathf.Cos(u), r * Mathf.Sin(u));
+                Complex wv = ComplexColor.PowFraction(z, 1, 2);
+                ComplexColor.RgbFor(wv, out float rr, out float gg, out float bb);
+                cols[j * w + i] = new Color32(
+                    (byte)Mathf.Clamp(rr * 255f + 0.5f, 0f, 255f),
+                    (byte)Mathf.Clamp(gg * 255f + 0.5f, 0f, 255f),
+                    (byte)Mathf.Clamp(bb * 255f + 0.5f, 0f, 255f),
+                    255);
+            }
+        }
+        var tex = new Texture2D(w, h, TextureFormat.RGB24, true);
+        tex.SetPixels32(cols);
+        tex.Apply(true);
+        tex.wrapMode = TextureWrapMode.Clamp;   // 绕两圈刚好接上，不需要 Repeat
+        tex.filterMode = FilterMode.Bilinear;
+        return tex;
     }
 
     /// 感知框：平时几乎隐形，人一进来就发亮

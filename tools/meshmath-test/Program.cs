@@ -187,6 +187,59 @@ class Program
             Check(Math.Abs(dArg - Math.PI / 2) < 1e-6, "从 arg 0 到 arg π，√z 的辐角只转 π/2", $"{dArg:F6} rad");
         }
 
+        // 0c) 黎曼面带：√z 的两片叶子用一条绕两圈的螺旋带表示
+        {
+            const int hsegU = 240, hsegV = 12, hturns = 2;
+            const float hrIn = 0.35f, hrOut = 1.6f, hPerTurn = 0.35f;
+            MeshData helix = MeshMath.RiemannHelix(hrIn, hrOut, hPerTurn, hturns, hsegU, hsegV);
+
+            Check(helix.VertexCount == (hsegU + 1) * (hsegV + 1),
+                  "黎曼面带顶点数 = (segU+1)(segV+1)", helix.VertexCount.ToString());
+            Check(helix.TriangleCount == hsegU * hsegV * 2,
+                  "黎曼面带三角形数 = segU·segV·2", helix.TriangleCount.ToString());
+            Check(helix.Uvs != null && helix.Uvs.Length == helix.VertexCount * 2,
+                  "黎曼面带自带 UV（每顶点 2 个）", helix.Uvs == null ? "null" : helix.Uvs.Length.ToString());
+
+            // 半径都在 [rIn, rOut]，高度从 0 升到 turns·hPerTurn
+            float hMinY = float.MaxValue, hMaxY = float.MinValue, hMinR = float.MaxValue, hMaxR = 0f;
+            for (int i = 0; i < helix.VertexCount; i++)
+            {
+                float x = helix.Vertices[i * 3], y = helix.Vertices[i * 3 + 1], z = helix.Vertices[i * 3 + 2];
+                float r = (float)Math.Sqrt(x * x + z * z);
+                if (y < hMinY) hMinY = y;
+                if (y > hMaxY) hMaxY = y;
+                if (r < hMinR) hMinR = r;
+                if (r > hMaxR) hMaxR = r;
+            }
+            Check(Math.Abs(hMinY) < 1e-6f && Math.Abs(hMaxY - hturns * hPerTurn) < 1e-5f,
+                  "高度从 0 升到 turns·hPerTurn", $"[{hMinY:F4}, {hMaxY:F4}]");
+            Check(hMinR > hrIn - 1e-5f && hMaxR < hrOut + 1e-5f,
+                  "半径始终在 [rIn, rOut] 内", $"[{hMinR:F4}, {hMaxR:F4}]");
+
+            // 绕满两圈回到同一 (x,z)，但高了一个整圈的高度 —— "两片叶子"的空间表达
+            int hLastRow = hsegU * (hsegV + 1);
+            Check(Math.Abs(helix.Vertices[hLastRow * 3] - helix.Vertices[0]) < 1e-4f
+               && Math.Abs(helix.Vertices[hLastRow * 3 + 2] - helix.Vertices[2]) < 1e-4f,
+               "绕两圈回到同一个 (x,z)", "seam ok");
+            Check(Math.Abs(helix.Vertices[hLastRow * 3 + 1] - helix.Vertices[1] - hturns * hPerTurn) < 1e-4f,
+               "接缝处高度差 = turns·hPerTurn", $"{helix.Vertices[hLastRow * 3 + 1] - helix.Vertices[1]:F4}");
+
+            // 颜色在接缝处必须连续（arg(√z) 在 u 与 u+4π 差 2π → 同一色相）
+            ComplexColor.RgbForZ(z => ComplexColor.PowFraction(z, 1, 2), 1f, 0f,
+                                  out float hsR, out float hsG, out float hsB);
+            ComplexColor.RgbForZ(z => ComplexColor.PowFraction(z, 1, 2), 1f, 0f,
+                                  out float heR, out float heG, out float heB);
+            Check(Math.Abs(hsR - heR) + Math.Abs(hsG - heG) + Math.Abs(hsB - heB) < 1e-6f,
+                  "√z 的颜色绕两圈后连续（接缝不跳色）", "rgb 相同");
+
+            // 绕一圈（z 走到 -1）时颜色明显不同 —— 那是另一片叶子
+            ComplexColor.RgbForZ(z => ComplexColor.PowFraction(z, 1, 2), -1f, 0f,
+                                  out float hnR, out float hnG, out float hnB);
+            Check(Math.Abs(hnR - hsR) + Math.Abs(hnG - hsG) + Math.Abs(hnB - hsB) > 0.1f,
+                  "绕一圈后颜色明显不同（另一片叶子）",
+                  $"({hnR:F2},{hnG:F2},{hnB:F2}) vs ({hsR:F2},{hsG:F2},{hsB:F2})");
+        }
+
         // 1) 辐角 → 色相
         ComplexColor.RgbForZ(sq, 1f, 0f, out float r1, out float g1, out float b1);
         Check(r1 > g1 && b1 < 0.02f, "z=1 → w=1（辐角 0）取红", $"rgb=({r1:F3},{g1:F3},{b1:F3})");

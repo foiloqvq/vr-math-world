@@ -8,8 +8,12 @@ namespace Vmw.Meshes
     {
         public float[] Vertices;   // 每 3 个一组 xyz
         public int[] Triangles;    // 每 3 个一组索引
+        /// 可选 UV：每 2 个一组 (u,v)。没有就是 null（老调用方不受影响）。
+        /// 曲面（如黎曼面带）必须自带 UV —— 用平面投影铺 UV 会把绕圈的参数抹平。
+        public float[] Uvs;
 
-        public MeshData(float[] vertices, int[] triangles) { Vertices = vertices; Triangles = triangles; }
+        public MeshData(float[] vertices, int[] triangles) { Vertices = vertices; Triangles = triangles; Uvs = null; }
+        public MeshData(float[] vertices, int[] triangles, float[] uvs) { Vertices = vertices; Triangles = triangles; Uvs = uvs; }
         public int VertexCount => Vertices.Length / 3;
         public int TriangleCount => Triangles.Length / 3;
     }
@@ -80,8 +84,60 @@ namespace Vmw.Meshes
             return new MeshData(verts, tris);
         }
 
-        /// 莫比乌斯带的参数方程（唯一真相：网格生成与曲面法线都用它）
-        /// P(u,v) = ((R + v·cos(u/2))·cos u, v·sin(u/2), (R + v·cos(u/2))·sin u)
+        /// 黎曼面（√z 的那两片叶子）用**一条绕两圈的螺旋带**来呈现。
+        ///
+        /// 参数：u ∈ [0, turns·2π]（绕角，同时决定高度）、v ∈ [0,1]（半径比例）。
+        ///   P(u,v) = ( R(v)·cos u , h·u/(2π) , R(v)·sin u )，R(v) = rIn + (rOut-rIn)·v
+        /// 于是绕一圈高度升 h；绕**两圈**回到同一个 (x,z)，但高了 2h ——
+        /// 正好对上 √z：绕一圈换到另一片叶子，绕两圈才回到原来那片。
+        ///
+        /// UV：u 归一化到 [0,1]（沿色带）、v 归一化到 [0,1]（沿半径）。
+        /// 之所以要自带 UV：绕圈的参数一旦被"平面投影"抹平，颜色接缝就对不上了。
+        public static MeshData RiemannHelix(float rIn, float rOut, float heightPerTurn, int turns, int segU, int segV)
+        {
+            if (turns < 1) throw new ArgumentOutOfRangeException(nameof(turns));
+            if (segU < 1) throw new ArgumentOutOfRangeException(nameof(segU));
+            if (segV < 1) throw new ArgumentOutOfRangeException(nameof(segV));
+
+            int nu = segU + 1, nv = segV + 1;
+            var verts = new float[nu * nv * 3];
+            var uvs = new float[nu * nv * 2];
+            float span = turns * 2f * (float)Math.PI;
+
+            for (int i = 0; i < nu; i++)
+            {
+                float u = span * i / segU;
+                float cu = (float)Math.Cos(u), su = (float)Math.Sin(u);
+                for (int j = 0; j < nv; j++)
+                {
+                    float t = (float)j / segV;
+                    float r = rIn + (rOut - rIn) * t;
+                    int k = (i * nv + j);
+                    verts[k * 3] = r * cu;
+                    verts[k * 3 + 1] = heightPerTurn * u / (float)(2 * Math.PI);
+                    verts[k * 3 + 2] = r * su;
+                    uvs[k * 2] = u / span;
+                    uvs[k * 2 + 1] = t;
+                }
+            }
+
+            var tris = new int[segU * segV * 6];
+            int p = 0;
+            for (int i = 0; i < segU; i++)
+            for (int j = 0; j < segV; j++)
+            {
+                int a = i * nv + j;
+                int b = (i + 1) * nv + j;
+                int c = i * nv + j + 1;
+                int d = (i + 1) * nv + j + 1;
+                // 顺序让法线大致朝 +Y（从上面看得见、能站上去）
+                tris[p++] = a; tris[p++] = b; tris[p++] = c;
+                tris[p++] = b; tris[p++] = d; tris[p++] = c;
+            }
+            return new MeshData(verts, tris, uvs);
+        }
+
+        /// 莫比乌斯带的参数方程（唯一真相：网格生成与曲面法线都用它）        /// P(u,v) = ((R + v·cos(u/2))·cos u, v·sin(u/2), (R + v·cos(u/2))·sin u)
         public static void MobiusPoint(float u, float v, float radius, float halfWidth, out float x, out float y, out float z)
         {
             double r = radius + v * Math.Cos(u * 0.5);

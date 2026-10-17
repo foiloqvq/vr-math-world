@@ -43,7 +43,19 @@
   两侧分别是 ±i、辐角只转 **1.570796 rad**）· headless `Generate exit 0` · `Verify OK`
   （图版 9409 顶点 / UV 9409 / 贴图 True；地砖 16641 / 16641 / True；Teleport_Math 4 个目标）
 
-**下一件候选**：**Slot_2 摆黎曼面** —— 把多值函数"摊开"成一圈层叠的曲面（分支切的立体版）。
+**下一件候选**：给黎曼面带加"走上去"的体验打磨（坡道更缓 / 螺旋更明显 / 两片叶子的色相再拉开），
+或者继续摆 Slot_3、Slot_4。
+
+### Slot_2 已开张（2026-10-17）：黎曼面（√z 的两片叶子）
+
+- 形态：一条**绕两圈的螺旋带**（`MeshMath.RiemannHelix`），绕一圈换到另一片叶子、绕两圈回到原来那片。
+  半径 0.35–1.60 m、每圈升 0.35 m、共两圈；贴在 Slot_2 台面上，**挂了 MeshCollider 能站上去**。
+- 颜色：贴图逐像素算 `z = r·e^{iu} → w = √z → ComplexColor 取色`（与 Slot_1 同一套规则）。
+  两圈下来色相正好转一整圈 → **接缝处不跳色**（有断言钉着）。
+- UV：螺旋的绕角参数**自带 UV**（`MeshData.Uvs`），**不能**再用 `SetPlanarUVs` —— 平面投影会把它抹平。
+- 验证数字：引擎外断言新增 7 条（顶点/三角形/UV/半径/高度/接缝回到同点/接缝不跳色/另一片叶子颜色不同）·
+  headless `Generate exit 0` · `Verify OK`：**`Exhibit_RiemannSqrt 顶点=3133 UV=3133 贴图=True`**
+  （3133 = 241×13）· objects=207 meshes=180
 
 **Backlog（明确以后再做，现在不碰）**：
 - **语音通话模式的"连机 / 线上"**（foilo 2026-10-17 定：**等有服务器、人多了再做**）。
@@ -165,6 +177,11 @@ body `{"text":"...","text_lang":"zh"}` → 返回 `audio/wav`（最小 JSON 即�
     `Remove-Item -Recurse` / `rm -rf` 会**直接删掉 `C:\Projects\VRMathWorld\Assets`**（真文件）。
     拆 junction 用 `Remove-Item <junction 路径>`（不带 -Recurse）或 `cmd /c rmdir <junction 路径>`。
     同理：`Get-ChildItem -Recurse` 会穿透进工程，扫仓库时要记得这一点。
+14. **别用 PowerShell 的 `Get-Content -Raw` + `WriteAllText` 去改带中文的源码**（2026-10-17 真翻车）：
+    这个 shell 读取 UTF-8 中文会按老代码页解，再写回去整份文件就变乱码、甚至把两行粘成一行；
+    正则替换里 `$` 也会被当成替换模式（`$"..."` 插值直接碎掉）。
+    → **改源码一律用文件编辑工具**（read/edit）；要批量改就先备份、并逐行按字节处理。
+    那天是靠 `git checkout -- <file>` 救回来的 —— **动手前先确认改动可回滚**。
 
 ## 七、两条公理与工作节奏
 
