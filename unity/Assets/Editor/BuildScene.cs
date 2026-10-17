@@ -149,17 +149,28 @@ public static class BuildScene
 
         // 展位台子：必须够大、而且是方块碰撞（圆柱原语的胶囊在非均匀缩放下顶面覆盖不全，
         // 曾在 Slot_2/3/4 造成"踩上去掉下去"。这条硬检查专防回归。）
+        // 2026-10-17 起台子可能是 Blender 模型（localScale=1，尺寸烘在网格里），
+        // 所以判据从 localScale 改成**世界包围盒**，两种来源都成立。
         for (int i = 1; i <= 4; i++)
         {
             var slot = world.transform.Find("District_Math/Slot_" + i);
             if (slot == null)
             { Debug.LogError("[BuildScene] Verify FAILED: 找不到展位台子 Slot_" + i); EditorApplication.Exit(1); return; }
             bool box = slot.GetComponent<BoxCollider>() != null;
-            bool big = slot.localScale.x >= 3.4f;
-            Debug.Log("[BuildScene] Verify: Slot_" + i + " 直径=" + slot.localScale.x.ToString("F1")
-                      + " 方块碰撞=" + box);
-            if (!box || !big)
+            var rend = slot.GetComponentInChildren<Renderer>();
+            float width = rend != null ? rend.bounds.size.x : 0f;
+            // 判断用的是 Blender 模型还是程序化圆柱：看网格名字
+            var mf = slot.GetComponentInChildren<MeshFilter>();
+            string meshName = (mf != null && mf.sharedMesh != null) ? mf.sharedMesh.name : "";
+            bool fromModel = meshName.IndexOf("SlotPedestal", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            Debug.Log("[BuildScene] Verify: Slot_" + i + " 宽=" + width.ToString("F2")
+                      + "m 方块碰撞=" + box + (fromModel ? "（模型）" : "（程序化）"));
+            if (!box || width < 3.4f)
             { Debug.LogError("[BuildScene] Verify FAILED: Slot_" + i + " 台子太小或碰撞体不是方块（会掉下去）"); EditorApplication.Exit(1); return; }
+            // 美术资产存在却没用上 = 流水线断了（glb 那次就是静默退化成程序化圆柱），必须报错
+            var artAsset = Resources.Load<GameObject>("Art/SlotPedestal");
+            if (artAsset != null && !fromModel)
+            { Debug.LogError("[BuildScene] Verify FAILED: Resources 里有 SlotPedestal，但 Slot_" + i + " 用的还是程序化圆柱"); EditorApplication.Exit(1); return; }
         }
 
         // 传送点：数学区（按 4）。落地朝向由 Teleport_Math 自己的 rotation 决定，

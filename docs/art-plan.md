@@ -69,6 +69,30 @@
 
 ## 四、交付约定
 
-- 模型放 `unity/Assets/Art/`（`.blend` 源文件**只放本地**，仓库只收 `glb`，体积小、Unity 直接读）。
-- 导出：Blender → `glTF 2.0 (.glb)`，勾选"应用修改器"，Y 轴向上（Unity 会自动转）。
-- 每个模型旁边记得配 `.meta` 要进库（Unity 生成，跟贴图一样，缺了会重排 GUID）。
+- 模型放 `unity/Assets/Art/`（`.blend` 源文件**只放本地**，仓库收导出文件）。
+- **导出格式用 FBX，不是 glb**（2026-10-17 实测踩坑）：
+  Unity **原生不导入 glTF/glb** —— 会被当成普通文件（`DefaultImporter`），
+  `Resources.Load` 拿不到、模型根本不会出现在场景里。**FBX** 是 Unity 原生支持的格式。
+  Blender 里：`文件 → 导出 → FBX (.fbx)`，勾「应用修改器」，缩放用 `FBX_SCALE_ALL`（尺寸直接是米）。
+  （要真用 glb，得额外装 `glTFast` 之类的包 —— 现在不装。）
+- 运行时加载：放在 `unity/Assets/Resources/Art/` 下，代码里
+  `Resources.Load<GameObject>("Art/名字")`；缺了会自动退回程序化占位（不会崩）。
+- 每个模型旁边的 `.meta` 必须进库（缺了 GUID 会重排，场景引用会连错）。
+
+## 五、参考实现（大肥鱼先跑通的那条流水线）
+
+`tools/blender_scripts/make_pedestal.py` —— 无界面生成「展位台子」，foilo 可以拿它对照：
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b `
+  -P tools\blender_scripts\make_pedestal.py -- `
+  unity\Assets\Resources\Art\SlotPedestal.fbx
+```
+
+产物：384 顶点 / 338 面 / 25 KB FBX，直径 3.6 m、高 0.5 m、一圈倒角。
+Unity 侧已接好：`Resources/Art/SlotPedestal` 存在就用它当台子外观，
+否则退回程序化圆柱；`Verify` 会硬检查「有资产却没用上」= FAILED。
+
+**你手做的第一遍建议照这个顺序**（10 分钟）：
+加圆柱 → `S` 缩到 半径 1.8 → 顶面收边 0.92 → `Ctrl+B` 倒角 0.03/3 段 →
+导出 FBX 覆盖这个文件 → 在 Unity 里按 Play，台子就变成你的了。

@@ -139,6 +139,9 @@ New-Item -ItemType Junction -Path "$r\unity\ProjectSettings" -Target "$t\Project
 New-Item -ItemType Junction -Path "$r\unity\Packages"        -Target "$t\Packages"
 New-Item -ItemType Junction -Path "C:\Projects\_verify\Assets\Scripts" -Target "$t\Assets\Scripts"
 New-Item -ItemType Junction -Path "C:\Projects\_verify\Assets\Editor"  -Target "$t\Assets\Editor"
+# 2026-10-17 补：美术资产走 Resources.Load，验证工程也必须能看见它，
+# 否则 headless Verify 会静默退回程序化占位（"（程序化）"）而看不出问题。
+New-Item -ItemType Junction -Path "C:\Projects\_verify\Assets\Resources" -Target "$t\Assets\Resources"
 ```
 
 ⚠️ **绝不带 `-Recurse` 去删 junction**（`Remove-Item -Recurse` / `rm -rf`）—— 那会删到**工程本体**。
@@ -221,6 +224,12 @@ body `{"text":"...","text_lang":"zh"}` → 返回 `audio/wav`（最小 JSON 即�
     正则替换里 `$` 也会被当成替换模式（`$"..."` 插值直接碎掉）。
     → **改源码一律用文件编辑工具**（read/edit）；要批量改就先备份、并逐行按字节处理。
     那天是靠 `git checkout -- <file>` 救回来的 —— **动手前先确认改动可回滚**。
+15. **Unity 原生不认 `.glb`**（2026-10-17）：把 Blender 的 glb 丢进 `Assets/`，日志里是
+    `DefaultImporter`（而不是 `FBXImporter`），`Resources.Load` 拿不到 → 场景静默退回程序化占位。
+    **美术导出用 FBX**；要用 glb 得额外装 `glTFast`。判断办法：看导入日志里的 importer 名字，
+    或用 `Verify` 里那条"有资产却没用上就 FAILED"。
+16. **`_verify` 工程要把 `Assets/Resources` 也 junction 过来**，否则 headless Verify 看不到美术资产，
+    会"看起来通过、其实是占位"。已在第四节补进 junction 清单。
 
 ## 七、两条公理与工作节奏
 

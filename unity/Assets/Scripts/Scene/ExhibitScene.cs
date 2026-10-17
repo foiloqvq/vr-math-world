@@ -799,21 +799,44 @@ public class ExhibitScene : MonoBehaviour
         // 2026-10-17 修：台面原来直径 2.2 米、半径 1.1，可展品有 2.1 米宽、黎曼面带直径 3.2 米，
         // 踩到悬空那半边就掉下去（foilo 报的"踩上去掉虚空"）。台子放大到直径 3.6 米（半径 1.8），
         // 保证每件展品的**脚下都有实地**；展位间距 7.5 米，也不会互相重叠。
+        //
+        // 2026-10-17 美术接入：如果 Resources/Art/SlotPedestal 存在（Blender 导出的 .glb），
+        // 就用它当台子的外观；否则退回程序化圆柱。碰撞体统一用 BoxCollider（顶面才是平的）。
+        var pedestalArt = Resources.Load<GameObject>("Art/SlotPedestal");
         for (int i = 0; i < 4; i++)
         {
             float x = MathSlotX[i];
-            var slot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            slot.name = "Slot_" + (i + 1);
-            slot.transform.SetParent(root.transform, false);
-            slot.transform.localPosition = new Vector3(x, 0.7f, MathSlotLocalZ);
-            slot.transform.localScale = new Vector3(3.6f, 0.25f, 3.6f);
-            slot.GetComponent<MeshRenderer>().sharedMaterial =
-                MaterialKit.MakeMaterial(new Color(0.22f, 0.30f, 0.45f), 0.3f);
-            // 圆柱原语的默认碰撞体是胶囊，非均匀缩放后顶面覆盖不全 —— 换成方盒，顶面才是平的
-            var cap = slot.GetComponent<Collider>();
-            if (cap != null) { if (Application.isPlaying) Destroy(cap); else DestroyImmediate(cap); }
-            var box = slot.AddComponent<BoxCollider>();
-            box.size = Vector3.one;   // 本地坐标 1×1×1，跟随 localScale 放大
+            GameObject slot;
+            if (pedestalArt != null)
+            {
+                slot = Instantiate(pedestalArt, root.transform);
+                slot.name = "Slot_" + (i + 1);
+                slot.transform.localPosition = new Vector3(x, 0.7f, MathSlotLocalZ);
+                slot.transform.localRotation = Quaternion.identity;
+                var r = slot.GetComponentInChildren<Renderer>();
+                var fit = slot.AddComponent<BoxCollider>();
+                if (r != null)
+                {
+                    // 用模型自己的包围盒，别手写数字：以后 foilo 改模型高矮，碰撞会自动跟着
+                    fit.center = r.localBounds.center;
+                    fit.size = r.localBounds.size;
+                }
+            }
+            else
+            {
+                slot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                slot.name = "Slot_" + (i + 1);
+                slot.transform.SetParent(root.transform, false);
+                slot.transform.localPosition = new Vector3(x, 0.7f, MathSlotLocalZ);
+                slot.transform.localScale = new Vector3(3.6f, 0.25f, 3.6f);
+                slot.GetComponent<MeshRenderer>().sharedMaterial =
+                    MaterialKit.MakeMaterial(new Color(0.22f, 0.30f, 0.45f), 0.3f);
+                // 圆柱原语的默认碰撞体是胶囊，非均匀缩放后顶面覆盖不全 —— 换成方盒
+                var cap = slot.GetComponent<Collider>();
+                if (cap != null) { if (Application.isPlaying) Destroy(cap); else DestroyImmediate(cap); }
+                var box = slot.AddComponent<BoxCollider>();
+                box.size = new Vector3(3.6f, 0.5f, 3.6f);
+            }
             BuildZone("Slot_" + (i + 1), root.transform.localPosition + new Vector3(x, 2.5f, MathSlotLocalZ), new Vector3(3.4f, 3f, 3.4f));
         }
     }
