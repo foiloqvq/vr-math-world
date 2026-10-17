@@ -105,6 +105,10 @@ objects=230 meshes=200。
 素材版权规矩也写在里面：**只用 CC0 / CC-BY，CC-BY-NC 和"游戏提取模型"一律不碰**，
 每引入一个第三方素材都要在 `unity/Assets/Art/CREDITS.md` 登记。
 
+**Unity 基础对照清单**：[`unity-basics.md`](unity-basics.md)
+—— 14 个概念，每条都指到项目里真实位置 + 一个"改一行就能验"的小实验 + 四周节奏。
+foilo 说下一步先学 Unity 基础、再把模型按类归置，这份就是给他对着学的。
+
 
 ### Slot_2 已开张（2026-10-17）：黎曼面（√z 的两片叶子）
 
