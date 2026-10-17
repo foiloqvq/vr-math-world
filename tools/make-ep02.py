@@ -23,6 +23,38 @@ ACCENT = (110, 230, 235)
 GOLD = (255, 208, 96)
 SEA = (40, 90, 160)
 
+
+def complex_panel(power_num, power_den, t, w, h):
+    """复平面 z^(p/q) 色图 —— 和世界里那块图版、EP01 用的是同一套映射。
+    这里当"抽象背景"用：压低亮度后垫在几何图形后面。
+    """
+    ys, xs = np.mgrid[0:h, 0:w]
+    x = (xs / w - 0.5) * 6.0
+    y = -(ys / h - 0.5) * 3.4
+    r = np.hypot(x, y) + 1e-6
+    th = np.arctan2(y, x)
+    r = r * (1.0 + 0.05 * math.sin(t * 1.2))
+    k = power_num / power_den
+    arg = th * k
+    mag = r ** k
+    hue = (arg / (2 * math.pi)) % 1.0
+    val = np.clip(0.18 + 0.55 * np.minimum(1.0, mag / 2.2), 0, 1)
+    i = (hue * 6).astype(np.int32) % 6
+    fr = hue * 6 - np.floor(hue * 6)
+    q = 1 - fr
+    r0 = np.select([i == 0, i == 1, i == 2, i == 3, i == 4], [1, q, 0, 0, fr], 1)
+    g0 = np.select([i == 0, i == 1, i == 2, i == 3, i == 4], [fr, 1, 1, q, 0], 0)
+    b0 = np.select([i == 0, i == 1, i == 2, i == 3, i == 4], [0, 0, fr, 1, 1], 0)
+    rgb = np.stack([r0, g0, b0], axis=-1) * val[..., None]
+    return Image.fromarray((rgb * 255).astype(np.uint8), "RGB")
+
+
+def with_abstract_bg(t, power=(1, 1), dim=0.42):
+    """抽象背景 + 压暗，供几何图形叠上去。"""
+    bg = complex_panel(power[0], power[1], t, W, H)
+    dark = Image.new("RGB", (W, H), BG)
+    return Image.blend(bg, dark, dim)
+
 SQRT2 = "1.41421356237309504880168872420969807856967187537694"
 
 
@@ -55,7 +87,7 @@ def frame_intro(t, dur):
 
 
 def frame_square(t, dur):
-    img = Image.new("RGB", (W, H), BG)
+    img = with_abstract_bg(t, (1, 1), 0.68)
     d = ImageDraw.Draw(img)
     s = 300
     x0, y0 = (W - s) // 2 - 120, 180
@@ -72,15 +104,19 @@ def frame_square(t, dur):
     # 右侧滚动小数
     n = int(t * 14)
     txt = SQRT2[:max(2, min(len(SQRT2), n))]
-    d.text((x0 + s + 60, y0 + 40), "√2 =", font=font(30), fill=ACCENT)
-    d.text((x0 + s + 60, y0 + 86), txt, font=font(26), fill=(220, 235, 255))
+    d.text((x0 + s + 60, y0 + 30), "√2 =", font=font(30), fill=ACCENT)
+    # 折成两行，别溢出屏幕
+    half = 26
+    d.text((x0 + s + 60, y0 + 74), txt[:half], font=font(24), fill=(220, 235, 255))
+    if len(txt) > half:
+        d.text((x0 + s + 60, y0 + 108), txt[half:half * 2], font=font(24), fill=(190, 210, 240))
     d.text((x0 + s + 60, y0 + 150), "① 写不成 a/b", font=font(24), fill=(255, 170, 120))
     d.text((x0 + s + 60, y0 + 190), "② 无限，不循环", font=font(24), fill=(255, 170, 120))
     return img
 
 
 def frame_frac(t, dur):
-    img = Image.new("RGB", (W, H), BG)
+    img = with_abstract_bg(t, (2, 1), 0.66)
     d = ImageDraw.Draw(img)
     center(d, (W // 2, 90), "他们说：万物皆分数", font(38, True), FG)
     pairs = [(3, 2), (7, 5), (17, 12), (99, 70), (239, 169)]
@@ -97,7 +133,7 @@ def frame_frac(t, dur):
 
 
 def frame_numberline(t, dur):
-    img = Image.new("RGB", (W, H), BG)
+    img = with_abstract_bg(t, (3, 2), 0.64)
     d = ImageDraw.Draw(img)
     y = H // 2
     d.line([(80, y), (W - 80, y)], fill=(120, 150, 190), width=3)
@@ -129,7 +165,7 @@ def draw_whale(d, cx, cy, s=0.32):
 
 
 def frame_outro(t, dur):
-    img = Image.new("RGB", (W, H), BG)
+    img = with_abstract_bg(t, (4, 1), 0.60)
     d = ImageDraw.Draw(img)
     a = min(1.0, t / 0.7)
     center(d, (W // 2, 210), "无理数 ≠ 没道理", font(52, True), tuple(int(c * a) for c in FG))
