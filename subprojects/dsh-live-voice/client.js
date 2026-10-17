@@ -392,13 +392,67 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * 阿拉伯数字 → 中文读法（给 TTS 用）。
+     *
+     * 为什么需要：八千代会把「31」「0.25」按英文/日文念出来（foilo 2026-10-17 反馈
+     * "数数字的声音是英文"）。转成中文数字后，播报就统一是中文了。
+     * 只处理常见的整数/小数/百分号，够用；公式里的 z² 之类不碰。
+     */
+    const CN_DIGIT = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+    const cnUnder10000 = (n) => {
+      if (n === 0) return '零'
+      const units = ['', '十', '百', '千']
+      let s = ''
+      const digits = String(n).split('').map(Number)
+      let zero = false
+      for (let i = 0; i < digits.length; i++) {
+        const d = digits[i]
+        const u = digits.length - 1 - i
+        if (d === 0) { zero = true; continue }
+        if (zero && s) s += '零'
+        zero = false
+        s += CN_DIGIT[d] + units[u]
+      }
+      return s.replace(/^一十/, '十')
+    }
+    const cnNumber = (raw) => {
+      const [intPart, decPart] = String(raw).split('.')
+      const n = Number(intPart)
+      let s
+      if (n < 10000) s = cnUnder10000(n)
+      else s = n.toLocaleString && false ? '' : String(n)
+      if (n >= 10000) {
+        // 万/亿（够用到 1 亿）
+        const yi = Math.floor(n / 100000000)
+        const wan = Math.floor((n % 100000000) / 10000)
+        const rest = n % 10000
+        s = (yi ? cnUnder10000(yi) + '亿' : '') + (wan ? cnUnder10000(wan) + '万' : '') + (rest ? cnUnder10000(rest) : '')
+        if (!s) s = '零'
+      }
+      if (decPart) s += '点' + decPart.split('').map((d) => CN_DIGIT[Number(d)]).join('')
+      return s
+    }
+    const numbersToChinese = (text) => {
+      if (!text) return text
+      return String(text)
+        .replace(/(\d+\.\d+)%/g, (m, p) => '百分之' + cnNumber(p))
+        .replace(/(\d+)%/g, (m, p) => '百分之' + cnNumber(p))
+        .replace(/(\d+\.\d+)/g, (m) => cnNumber(m))
+        .replace(/(\d+)/g, (m) => cnNumber(m))
+    }
+
     /** 本机八千代 TTS 合成 → 音频字节（调用方包成 blob 播）。 */
     const synthSpeech = async (text, fetchImpl, url) => {
       const f = fetchImpl || fetch
+      // 默认把数字转中文；想听英文数字就把配置 numbersAsChinese 设为 false
+      let chineseNumbers = true
+      try { if (readConfig().numbersAsChinese === false) chineseNumbers = false } catch (e) {}
+      const spoken = chineseNumbers ? numbersToChinese(text) : text
       const res = await f(url || 'http://127.0.0.1:7880/api/v1/tts/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text: spoken }),
       })
       if (!res.ok) throw new Error('TTS HTTP ' + res.status)
       const buf = await res.arrayBuffer()
@@ -416,7 +470,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.17'
+    const BUILD = '2026-10-17.18'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -465,6 +519,8 @@ window.__ModuleLoader__.load({
       // SenseVoice 是中英日韩多语模型，自动判定对短音频不稳；钉成中文最可靠。
       // 想临时改回：window.__dshLiveVoiceConfig = { language: 'auto' } 然后刷新。
       language: 'zh',
+      // 数字是否转成中文读（false = 让八千代按它自己的方式念，可能出英文/日文）
+      numbersAsChinese: true,
       ttsUrl: 'http://127.0.0.1:7880/api/v1/tts/tasks',
       verbose: true,
     }
