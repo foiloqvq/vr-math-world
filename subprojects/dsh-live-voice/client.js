@@ -416,7 +416,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.12'
+    const BUILD = '2026-10-17.13'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -433,6 +433,12 @@ window.__ModuleLoader__.load({
       // 发出去的句子全是半截。宁可多等，也别切人话。
       silenceMs: 1500,
       minSpeechMs: 300,
+
+      // ---- 闹钟（默认每天 20:00 叫醒我）----
+      alarmEnabled: true,
+      alarmTimes: ['20:00'],
+      alarmPrompt: '（闹钟）先读 study-space/PLAN.md 和 unity/Assets/Art/concepts/README.md，' +
+        '用一句话告诉我今天该推哪块；如果我今天还没交原画练习，提醒我画 20 个盒子。别啰嗦。',
       maxUtteranceMs: 20000,
       calibrationMs: 600,
       // 触发门限：相对噪声本底的倍数 + 绝对下限。
@@ -760,6 +766,52 @@ window.__ModuleLoader__.load({
           pushDiag('submit-remote-throw', err && err.message ? err.message : String(err))
           return { ok: false, reason: 'throw', error: err }
         }
+      }
+
+      /**
+       * ---- 闹钟（2026-10-17 foilo 要求：别让他提醒我，要闹钟直接叫我）----
+       *
+       * 机制：页面开着的时候，每到配置的时间点，用 `ctx.remote.session.prompt` 给当前会话
+       * 发一条消息 —— 效果等于"有人替你打了一句话"，我就会被唤醒并开始干活。
+       *
+       * 限制（诚实记录）：
+       *   · **DSH 页面必须开着**（插件跑在浏览器里，页面关了就没闹钟）。
+       *   · 它只能叫醒**当前会话**；别的会话它管不到。
+       *   · 时间按本机时区算，一天只响一次（lastFired 存 localStorage，刷新不会重复响）。
+       */
+      const ALARM_KEY = 'dsh-live-voice.alarm.last'
+
+      /** 今天的 HH:MM 是否等于某个闹钟时间点 */
+      const dueAlarm = (now) => {
+        const list = Array.isArray(cfg.alarmTimes) ? cfg.alarmTimes : []
+        if (!list.length) return null
+        const hh = String(now.getHours()).padStart(2, '0')
+        const mm = String(now.getMinutes()).padStart(2, '0')
+        const stamp = hh + ':' + mm
+        const dateKey = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate() + ' ' + stamp
+        if (!list.includes(stamp)) return null
+        let last = ''
+        try { last = window.localStorage.getItem(ALARM_KEY) || '' } catch (e) {}
+        if (last === dateKey) return null          // 这一分钟的闹钟已经响过
+        return { stamp, dateKey }
+      }
+
+      const startAlarm = () => {
+        if (!cfg.alarmEnabled) return null
+        const tick = async () => {
+          const hit = dueAlarm(new Date())
+          if (!hit) return
+          try { window.localStorage.setItem(ALARM_KEY, hit.dateKey) } catch (e) {}
+          const text = String(cfg.alarmPrompt || '').trim()
+          if (!text) return
+          pushDiag('alarm-fire', hit.stamp)
+          // 记一笔：闹钟响了但可能还没拿到 sessionId，那就等下一分钟再试（这里只响一次，不重试）
+          const r = await promptRemote(activeSessionId, text)
+          pushDiag('alarm-result', r.ok ? '已投递' : ('失败 ' + (r.reason || '')))
+        }
+        const timer = setInterval(() => { tick().catch(() => {}) }, 20000)   // 20s 检查一次，够准也不费
+        tick().catch(() => {})
+        return () => clearInterval(timer)
       }
 
       /** 兜底：把文字写进输入框，再补一个 Enter 事件。 */
@@ -1111,6 +1163,13 @@ window.__ModuleLoader__.load({
           ' blocks=' + s.blocks + ' 句=' + s.utterances + ' 丢=' + s.drops + ' 屏蔽丢=' + s.blockedDrops)
       }, 400)
       if (typeof ctx.effect === 'function') ctx.effect(() => () => clearInterval(tickTimer), 'dsh-live-voice telemetry')
+
+      // ---- 闹钟：到点给会话发消息，把我叫醒（页面开着才有效）----
+      const stopAlarm = startAlarm()
+      if (typeof ctx.effect === 'function' && stopAlarm) {
+        ctx.effect(() => () => stopAlarm(), 'dsh-live-voice alarm')
+      }
+      if (cfg.alarmEnabled) pushDiag('alarm-armed', (cfg.alarmTimes || []).join(' / ') || '无时间点')
 
       // ---- 调试把手 ----
       try {
