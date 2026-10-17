@@ -470,7 +470,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.19'
+    const BUILD = '2026-10-17.20'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -700,6 +700,12 @@ window.__ModuleLoader__.load({
       let micDeviceId = ''
       let micLabel = ''
       let actionsRef = { inputActions: null }
+      // ---- 常听模式（2026-10-17 foilo 要的"耳朵"）----
+      // 开着页面就一直听，说完自动提交；状态存 localStorage，刷新后保持。
+      // 注意：每次提交都会消耗 token —— 这也是他明确知道的代价。
+      const AL_KEY = 'dsh-live-voice.autolisten'
+      let autoListen = false
+      try { autoListen = window.localStorage.getItem(AL_KEY) === '1' } catch (e) {}
       let activeSessionId = ''
       let speakChain = Promise.resolve()
       let stallTimer = null
@@ -1235,6 +1241,19 @@ window.__ModuleLoader__.load({
             }, text),
             react.createElement('button', {
               type: 'button',
+              className: 'dsh-live-voice-btn' + (autoListen ? ' on' : ''),
+              title: '常听模式：开着页面就一直在听，你说完自动发（会消耗 token）；再点一下关掉',
+              onClick: () => {
+                // 常听开关：状态存 localStorage，刷新后仍然生效
+                autoListen = !autoListen
+                try { window.localStorage.setItem(AL_KEY, autoListen ? '1' : '0') } catch (e) {}
+                pushDiag('auto-listen', autoListen ? '开' : '关')
+                try { if (autoListen && !state.enabled) start(); else if (!autoListen && state.enabled) stop() } catch (e) {}
+                forceTick()
+              },
+            }, autoListen ? '👂 常听中' : '👂 常听'),
+            react.createElement('button', {
+              type: 'button',
               className: 'dsh-live-voice-btn',
               title: '让大肥鱼看一个网页（会打开一个网址输入框）',
               onClick: () => askToLook('web'),
@@ -1276,6 +1295,17 @@ window.__ModuleLoader__.load({
         try { forceTick() } catch (e) {}
       }
       runBootCheck()
+
+      // 常听模式：页面加载 1.5 秒后自动开始听（如果上次是开着的）
+      // 失败（没权限/没设备）就静默退化成手动按钮，不弹错误。
+      if (autoListen) {
+        setTimeout(() => {
+          if (!state.enabled) {
+            pushDiag('auto-listen-boot', '常听模式自动启动')
+            start().catch((e) => pushDiag('auto-listen-fail', e && e.message ? e.message : String(e)))
+          }
+        }, 1500)
+      }
 
       // ---- 遥测：既做 2 秒一条的日志，也让按钮实时显示「有声音/静音」 ----
       let lastTick = 0
