@@ -416,7 +416,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.13'
+    const BUILD = '2026-10-17.15'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -434,11 +434,24 @@ window.__ModuleLoader__.load({
       silenceMs: 1500,
       minSpeechMs: 300,
 
-      // ---- 闹钟（默认每天 20:00 叫醒我）----
+      // ---- 闹钟（foilo 2026-10-17 定：21:50 开工，23:00 收工睡觉）----
       alarmEnabled: true,
-      alarmTimes: ['20:00'],
-      alarmPrompt: '（闹钟）先读 study-space/PLAN.md 和 unity/Assets/Art/concepts/README.md，' +
-        '用一句话告诉我今天该推哪块；如果我今天还没交原画练习，提醒我画 20 个盒子。别啰嗦。',
+      alarmSchedule: [
+        {
+          time: '21:50',
+          prompt:
+            '（21:50 开工闹钟）foilo 下课到家了。请：①读 study-space/PLAN.md 和 vr-math-world/docs/NEXT.md，' +
+            '用一句话说今天推哪块；②检查项目状态（Unity 是否在跑、语音服务 7880 是否在线、有没有未提交改动），' +
+            '有问题就报出来；③然后直接开始干那一块，别等他催。说话短一点。',
+        },
+        {
+          time: '23:00',
+          prompt:
+            '（23:00 收工闹钟）提醒 foilo 该睡了，然后做收工三件事：' +
+            '①更新 vr-math-world/docs/NEXT.md（进度 + 新坑）；②写今天的 study-space/journal 日志；' +
+            '③更新 study-space/MEMORY.md。做完用两三行总结今天完成了什么、明天第一件事是什么。',
+        },
+      ],
       maxUtteranceMs: 20000,
       calibrationMs: 600,
       // 触发门限：相对噪声本底的倍数 + 绝对下限。
@@ -781,19 +794,35 @@ window.__ModuleLoader__.load({
        */
       const ALARM_KEY = 'dsh-live-voice.alarm.last'
 
-      /** 今天的 HH:MM 是否等于某个闹钟时间点 */
+      /** 把配置统一成 [{time:'21:50', prompt:'…'}] 形式（兼容老的 alarmTimes/alarmPrompt） */
+      const alarmList = () => {
+        const out = []
+        if (Array.isArray(cfg.alarmSchedule)) {
+          for (const it of cfg.alarmSchedule) {
+            if (!it || !it.time) continue
+            out.push({ time: String(it.time), prompt: String(it.prompt || cfg.alarmPrompt || '') })
+          }
+        }
+        if (!out.length && Array.isArray(cfg.alarmTimes)) {
+          for (const t of cfg.alarmTimes) out.push({ time: String(t), prompt: String(cfg.alarmPrompt || '') })
+        }
+        return out
+      }
+
+      /** 今天的 HH:MM 命中哪个闹钟；命中就返回 {stamp, dateKey, prompt} */
       const dueAlarm = (now) => {
-        const list = Array.isArray(cfg.alarmTimes) ? cfg.alarmTimes : []
+        const list = alarmList()
         if (!list.length) return null
         const hh = String(now.getHours()).padStart(2, '0')
         const mm = String(now.getMinutes()).padStart(2, '0')
         const stamp = hh + ':' + mm
+        const hit = list.find((it) => it.time === stamp)
+        if (!hit) return null
         const dateKey = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate() + ' ' + stamp
-        if (!list.includes(stamp)) return null
         let last = ''
         try { last = window.localStorage.getItem(ALARM_KEY) || '' } catch (e) {}
         if (last === dateKey) return null          // 这一分钟的闹钟已经响过
-        return { stamp, dateKey }
+        return { stamp, dateKey, prompt: hit.prompt }
       }
 
       const startAlarm = () => {
@@ -802,12 +831,12 @@ window.__ModuleLoader__.load({
           const hit = dueAlarm(new Date())
           if (!hit) return
           try { window.localStorage.setItem(ALARM_KEY, hit.dateKey) } catch (e) {}
-          const text = String(cfg.alarmPrompt || '').trim()
-          if (!text) return
+          const text = String(hit.prompt || '').trim()
+          if (!text) { pushDiag('alarm-empty', hit.stamp); return }
           pushDiag('alarm-fire', hit.stamp)
-          // 记一笔：闹钟响了但可能还没拿到 sessionId，那就等下一分钟再试（这里只响一次，不重试）
+          // 记一笔：闹钟响了但可能还没拿到 sessionId（那时会失败，不重试 —— 一天只响一次）
           const r = await promptRemote(activeSessionId, text)
-          pushDiag('alarm-result', r.ok ? '已投递' : ('失败 ' + (r.reason || '')))
+          pushDiag('alarm-result', (r.ok ? '已投递' : ('失败 ' + (r.reason || ''))) + ' @' + hit.stamp)
         }
         const timer = setInterval(() => { tick().catch(() => {}) }, 20000)   // 20s 检查一次，够准也不费
         tick().catch(() => {})
@@ -1165,11 +1194,17 @@ window.__ModuleLoader__.load({
       if (typeof ctx.effect === 'function') ctx.effect(() => () => clearInterval(tickTimer), 'dsh-live-voice telemetry')
 
       // ---- 闹钟：到点给会话发消息，把我叫醒（页面开着才有效）----
-      const stopAlarm = startAlarm()
+      // 用 try 包住：闹钟是"锦上添花"，绝不能因为它把按钮/面板弄挂（2026-10-17 真出过一次）。
+      let stopAlarm = null
+      try {
+        stopAlarm = startAlarm()
+        if (cfg.alarmEnabled) pushDiag('alarm-armed', (cfg.alarmTimes || []).join(' / ') || '无时间点')
+      } catch (e) {
+        pushDiag('alarm-error', e && e.message ? e.message : String(e))
+      }
       if (typeof ctx.effect === 'function' && stopAlarm) {
         ctx.effect(() => () => stopAlarm(), 'dsh-live-voice alarm')
       }
-      if (cfg.alarmEnabled) pushDiag('alarm-armed', (cfg.alarmTimes || []).join(' / ') || '无时间点')
 
       // ---- 调试把手 ----
       try {
