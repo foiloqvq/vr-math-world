@@ -470,7 +470,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.18'
+    const BUILD = '2026-10-17.19'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -1197,6 +1197,33 @@ window.__ModuleLoader__.load({
         // 构建戳不上按钮（foilo 嫌占地方）——只在 title 和控制台里。
         const text = (state.error ? '🔴 ' : (active ? '🎙 ' : '📞 ')) + label + voiceHint
 
+        // ---- 我们自己的两个「给大肥鱼派活」按钮（2026-10-17 foilo：把开浏览器那些东西做进插件）----
+        // 原理：点一下 → 往当前会话投一条 prompt（和语音提交同一条通道），
+        // 我收到就会去跑 see.ps1 / capture.ps1 —— 相当于给我一个"眼睛"按钮。
+        const askToLook = (kind) => {
+          try {
+            const url = kind === 'web'
+              ? window.prompt('要我看哪个网址？（留空 = 看当前打开的页面）', '')
+              : ''
+            if (url === null) return
+            let msg
+            if (kind === 'web') {
+              msg = url
+                ? '帮我看一下这个网页：' + url + '\n（用 study-space/tools/see.ps1；B站/YouTube 需要登录态时用 -ProfileDir dsh-see-profile-x）'
+                : '帮我截一下我现在的屏幕，看看我在干什么（用 study-space/tools/capture.ps1 -Shots 3 -Interval 1）'
+            } else if (kind === 'shot') {
+              msg = '帮我截一下我现在的屏幕（capture.ps1 -Shots 3 -Interval 1），然后告诉我你看到什么'
+            } else {
+              msg = '帮我看看我屏幕上的这个页面，把关键信息读出来（capture.ps1 -Shots 3 -Interval 1）'
+            }
+            promptRemote(activeSessionId, msg).then((r) => {
+              pushDiag('look-' + kind, r.ok ? '已投递' : ('失败 ' + (r.reason || '')))
+            })
+          } catch (e) {
+            pushDiag('look-error', e && e.message ? e.message : String(e))
+          }
+        }
+
         return react.createElement(react.Fragment, null,
           react.createElement('div', { className: 'dsh-live-voice', 'data-phase': state.phase },
             react.createElement('button', {
@@ -1206,6 +1233,18 @@ window.__ModuleLoader__.load({
               'aria-pressed': active ? 'true' : 'false',
               onClick,
             }, text),
+            react.createElement('button', {
+              type: 'button',
+              className: 'dsh-live-voice-btn',
+              title: '让大肥鱼看一个网页（会打开一个网址输入框）',
+              onClick: () => askToLook('web'),
+            }, '👁 看'),
+            react.createElement('button', {
+              type: 'button',
+              className: 'dsh-live-voice-btn',
+              title: '让大肥鱼截一张你现在的屏幕',
+              onClick: () => askToLook('shot'),
+            }, '📷 屏'),
           ),
           // 报错条：屏幕上常驻、纯文本、点一下复制。修好之后可以删掉这一段。
           state.error ? react.createElement('div', {
