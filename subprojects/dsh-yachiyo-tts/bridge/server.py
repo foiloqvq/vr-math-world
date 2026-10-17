@@ -38,6 +38,10 @@ with open(os.path.join(HERE, "config.json"), encoding="utf-8") as f:
 UPSTREAM = str(CFG.get("upstream", "http://127.0.0.1:9880")).rstrip("/")
 TOKEN = str(CFG.get("token", ""))
 PORT = int(CFG.get("port", 7880))
+# 安全限额（2026-10-17 自查后加）：请求体最大 64 KB，单次合成文本最多 2000 字。
+# 目的不是防御攻击者（本机服务），而是防止"网页误触发/自己写错循环"把机器拖死。
+MAX_BODY_BYTES = int(CFG.get("maxBodyBytes", 64 * 1024))
+MAX_TEXT_CHARS = int(CFG.get("maxTextChars", 2000))
 VOICE_NAME = str(CFG.get("voiceName", "月见八千代（内置）"))
 TEXT_LANG = str(CFG.get("textLang", "zh"))
 UPSTREAM_LIMIT = int(CFG.get("upstreamTextLimit", 3000))
@@ -248,10 +252,28 @@ class Handler(BaseHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
         if path != "/api/v1/tts/tasks":
             return self._json({"detail": "not found"}, 404)
+
+        # ---- 本机服务的最小防护（2026-10-17 安全自查后加）----
+        # 背景：这个桥接只监听 127.0.0.1，但**你浏览器里打开的任意网页**都能用
+        # 「简单请求」(text/plain + no-cors) 打到 localhost —— 不需要 CORS 预检。
+        # 也就是说：恶意网页可以不问你就让这个服务合成语音（占 CPU、出声、刷上游额度）。
+        # 三道闸：只认本机 Host、拒绝带外部 Origin 的请求、限制请求体与文本长度。
+        host = (self.headers.get("Host") or "").split(":")[0].lower()
+        if host not in ("127.0.0.1", "localhost", "[::1]", "::1"):
+            return self._json({"detail": "forbidden host"}, 403)
+        origin = (self.headers.get("Origin") or "").strip()
+        if origin and not origin.lower().startswith(("http://127.0.0.1", "http://localhost", "https://127.0.0.1", "https://localhost")):
+            return self._json({"detail": "forbidden origin"}, 403)
+        site = (self.headers.get("Sec-Fetch-Site") or "").strip().lower()
+        if site in ("cross-site", "same-site"):
+            return self._json({"detail": "forbidden site"}, 403)
+
         try:
             n = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             n = 0
+        if n > MAX_BODY_BYTES:                      # 防止超大 body 占内存
+            return self._json({"detail": "body too large"}, 413)
         raw = self.rfile.read(n) if n else b"{}"
         try:
             params = json.loads(raw or b"{}")
@@ -260,6 +282,8 @@ class Handler(BaseHTTPRequestHandler):
         text = str(params.get("text") or "").strip()
         if not text:
             return self._json({"detail": "empty text"}, 400)
+        if len(text) > MAX_TEXT_CHARS:              # 防止一次塞几十万字
+            return self._json({"detail": "text too long (max %d)" % MAX_TEXT_CHARS}, 413)
         t0 = time.time()
         try:
             wav = synthesize(text)
