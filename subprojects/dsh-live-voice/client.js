@@ -416,7 +416,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.15'
+    const BUILD = '2026-10-17.16'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -436,6 +436,7 @@ window.__ModuleLoader__.load({
 
       // ---- 闹钟（foilo 2026-10-17 定：21:50 开工，23:00 收工睡觉）----
       alarmEnabled: true,
+      petEnabled: true,       // 右下角那只会说话的大肥鱼（可拖、可点开通话）
       alarmSchedule: [
         {
           time: '21:50',
@@ -1010,6 +1011,22 @@ window.__ModuleLoader__.load({
         '.dsh-live-voice[data-phase="speaking"] .dsh-live-voice-btn{opacity:.6}',
         '.dsh-live-voice-err{color:#e5484d;font-size:12px;cursor:pointer;text-decoration:underline}',
         '.dsh-lv-banner{display:block;flex-basis:100%;width:100%;margin-top:6px;padding:5px 9px;border-radius:7px;background:rgba(229,72,77,.14);border:1px solid rgba(229,72,77,.5);color:#ff9b9b;font-size:11px;line-height:1.5;cursor:pointer;word-break:break-all}',
+        // ---- 桌面宠物（会说话的大肥鱼）----
+        '.dsh-lv-pet{position:fixed;right:16px;bottom:92px;width:78px;height:78px;z-index:60;cursor:grab;user-select:none;touch-action:none;transition:filter .2s}',
+        '.dsh-lv-pet.dragging{cursor:grabbing}',
+        '.dsh-lv-pet .body{font-size:52px;line-height:78px;text-align:center;display:block;filter:drop-shadow(0 8px 14px rgba(0,0,0,.45));transition:transform .25s}',
+        '.dsh-lv-pet[data-state="listening"] .body{animation:lv-bob .9s ease-in-out infinite}',
+        '.dsh-lv-pet[data-state="speaking"] .body{animation:lv-talk .32s ease-in-out infinite}',
+        '.dsh-lv-pet[data-state="working"] .body{animation:lv-think 1.4s ease-in-out infinite}',
+        '.dsh-lv-pet[data-state="idle"] .body{opacity:.85}',
+        '.dsh-lv-pet .ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(110,180,255,.0);pointer-events:none}',
+        '.dsh-lv-pet[data-state="listening"] .ring{border-color:rgba(110,180,255,.55);animation:lv-pulse 1.1s ease-out infinite}',
+        '.dsh-lv-bubble{position:absolute;right:82px;bottom:16px;max-width:230px;min-width:60px;background:rgba(16,24,40,.94);border:1px solid rgba(120,180,255,.4);border-radius:10px;padding:6px 9px;font-size:11px;line-height:1.55;color:#dbe7ff;white-space:pre-wrap;box-shadow:0 8px 20px rgba(0,0,0,.35)}',
+        '.dsh-lv-bubble:empty{display:none}',
+        '@keyframes lv-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}',
+        '@keyframes lv-talk{0%,100%{transform:scale(1)}50%{transform:scale(1.08) rotate(-2deg)}}',
+        '@keyframes lv-think{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}',
+        '@keyframes lv-pulse{0%{transform:scale(.9);opacity:.7}100%{transform:scale(1.25);opacity:0}}',
         PANEL_CSS,
       ].join('\n')
       document.head.appendChild(style)
@@ -1204,6 +1221,104 @@ window.__ModuleLoader__.load({
       }
       if (typeof ctx.effect === 'function' && stopAlarm) {
         ctx.effect(() => () => stopAlarm(), 'dsh-live-voice alarm')
+      }
+
+      // ---- 桌面宠物：会说话的大肥鱼（foilo 2026-10-17 要的"互动性"）----
+      // 为什么不走 slot：宠物要 fixed 在页面右下角、可拖动，用 DOM 最省事；
+      // 状态（空闲/听/说/想）直接读 voice 的内部状态，和通话按钮完全同步。
+      let stopPet = null
+      try {
+        if (cfg.petEnabled) {
+          const POS_KEY = 'dsh-live-voice.pet.pos'
+          const el = document.createElement('div')
+          el.className = 'dsh-lv-pet'
+          el.setAttribute('data-state', 'idle')
+          el.title = '大肥鱼：单击=通话开/关，拖动=挪位置'
+          el.innerHTML = '<span class="ring"></span><span class="body">🐳</span><span class="dsh-lv-bubble"></span>'
+          const bubble = el.querySelector('.dsh-lv-bubble')
+
+          // 恢复上次位置
+          let pos = null
+          try { pos = JSON.parse(window.localStorage.getItem(POS_KEY) || 'null') } catch (e) {}
+          if (pos && typeof pos.left === 'number') {
+            el.style.left = pos.left + 'px'
+            el.style.top = pos.top + 'px'
+            el.style.right = 'auto'
+            el.style.bottom = 'auto'
+          }
+
+          let drag = null
+          const onDown = (ev) => {
+            drag = { x: ev.clientX, y: ev.clientY, moved: false }
+            el.classList.add('dragging')
+            if (ev.pointerId !== undefined && el.setPointerCapture) { try { el.setPointerCapture(ev.pointerId) } catch (e) {} }
+          }
+          const onMove = (ev) => {
+            if (!drag) return
+            const dx = ev.clientX - drag.x
+            const dy = ev.clientY - drag.y
+            if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true
+            if (!drag.moved) return
+            const r = el.getBoundingClientRect()
+            const left = Math.max(0, Math.min(window.innerWidth - r.width, r.left + dx))
+            const top = Math.max(0, Math.min(window.innerHeight - r.height, r.top + dy))
+            el.style.left = left + 'px'
+            el.style.top = top + 'px'
+            el.style.right = 'auto'
+            el.style.bottom = 'auto'
+            drag.x = ev.clientX
+            drag.y = ev.clientY
+          }
+          const onUp = () => {
+            if (!drag) return
+            const moved = drag.moved
+            drag = null
+            el.classList.remove('dragging')
+            if (moved) {
+              const r = el.getBoundingClientRect()
+              try { window.localStorage.setItem(POS_KEY, JSON.stringify({ left: r.left, top: r.top })) } catch (e) {}
+            } else {
+              onClick()          // 没拖动 = 单击 → 通话开/关
+            }
+          }
+          el.addEventListener('pointerdown', onDown)
+          window.addEventListener('pointermove', onMove)
+          window.addEventListener('pointerup', onUp)
+
+          document.body.appendChild(el)
+
+          // 每 400ms 把状态同步到宠物：空闲/听/说/想 + 气泡文字
+          const syncPet = () => {
+            try {
+              const st = !state.enabled
+                ? 'idle'
+                : (audio || busy ? 'speaking' : (state.phase === 'thinking' ? 'working' : 'listening'))
+              el.setAttribute('data-state', st)
+              let txt = ''
+              if (state.error) txt = '⚠ ' + state.error
+              else if (st === 'speaking') txt = (lastReply || '…').slice(0, 60)
+              else if (st === 'listening') txt = state.caption || '听着呢…'
+              else if (st === 'working') txt = '想一下…'
+              bubble.textContent = txt
+            } catch (e) {}
+          }
+          const petTimer = setInterval(syncPet, 400)
+          syncPet()
+          pushDiag('pet-on')
+
+          stopPet = () => {
+            clearInterval(petTimer)
+            el.removeEventListener('pointerdown', onDown)
+            window.removeEventListener('pointermove', onMove)
+            window.removeEventListener('pointerup', onUp)
+            if (el.parentNode) el.parentNode.removeChild(el)
+          }
+        }
+      } catch (e) {
+        pushDiag('pet-error', e && e.message ? e.message : String(e))
+      }
+      if (typeof ctx.effect === 'function' && stopPet) {
+        ctx.effect(() => () => stopPet(), 'dsh-live-voice pet')
       }
 
       // ---- 调试把手 ----
