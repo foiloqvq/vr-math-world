@@ -116,7 +116,7 @@ public static class BuildScene
         // 展品：复变函数的颜色映射（数学区 Slot_1 + 可走地砖）。
         // 这里特意把"顶点 / UV / 贴图"三个数字都报出来 —— 展品最容易静默漏掉或被建出来但没贴图，
         // 而"贴图没生效"（网格没有 UV）属于只能靠肉眼发现的 bug，值得用一条硬检查挡住。
-        foreach (string name in new[] { "Exhibit_ComplexMap", "Walk_ComplexPlane", "Exhibit_RiemannSqrt" })
+        foreach (string name in new[] { "Exhibit_ComplexMap", "Walk_ComplexPlane", "Exhibit_RiemannSqrt", "Exhibit_Fractions" })
         {
             var go = world.transform.Find(name);
             if (go == null)
@@ -133,6 +133,20 @@ public static class BuildScene
             if (mesh != null && !hasUv)
             { Debug.LogError("[BuildScene] Verify FAILED: " + name + " 的网格没有 UV（贴图只会显示一个像素的颜色）"); EditorApplication.Exit(1); return; }
         }
+        // 斜坡展品：三条斜坡都必须有碰撞体（能走上去），数量也要对
+        var slopes = world.transform.Find("Exhibit_Slopes");
+        if (slopes == null)
+        { Debug.LogError("[BuildScene] Verify FAILED: 找不到展品 Exhibit_Slopes"); EditorApplication.Exit(1); return; }
+        int slopeCount = 0, slopeColliders = 0;
+        foreach (Transform child in slopes)
+        {
+            slopeCount++;
+            if (child.GetComponent<MeshCollider>() != null) slopeColliders++;
+        }
+        Debug.Log("[BuildScene] Verify: Exhibit_Slopes 斜坡=" + slopeCount + " 带碰撞=" + slopeColliders);
+        if (slopeCount != 3 || slopeColliders != 3)
+        { Debug.LogError("[BuildScene] Verify FAILED: 斜坡应为 3 条且都带 MeshCollider（否则走不上去）"); EditorApplication.Exit(1); return; }
+
         // 传送点：数学区（按 4）。落地朝向由 Teleport_Math 自己的 rotation 决定，
         // 所以这里把它的角度也报出来（180° = 面朝 Slot_1 的图版，而不是背对着）。
         // 同时也数一遍传送目标：这条专防"加了键但目标没挂上"（1/2/3 失灵过类似的坑）。

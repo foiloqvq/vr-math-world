@@ -269,6 +269,138 @@ public class ExhibitScene : MonoBehaviour
         BuildBlackHole();
         BuildComplexColorMap();
         BuildRiemannSurface();
+        BuildFractionsFloor();
+        BuildSlopesExhibit();
+    }
+
+    // =====================================================================
+    // Slot_4：一次函数斜坡（小学区/初中区交界）
+    // =====================================================================
+
+    /// 三条并排的可走斜坡，斜率 k = 0.25 / 0.5 / 0.75 —— 一次函数 y = kx 的 k
+    /// 在这里就是"每往右走 1 米，升高 k 米"。走三条就知道"陡"是什么意思。
+    public static readonly float[] SlopeKs = { 0.25f, 0.5f, 0.75f };
+    public const float SlopeLength = 2.1f;
+    public const float SlopeWidth = 0.66f;
+
+    void BuildSlopesExhibit()
+    {
+        var root = new GameObject("Exhibit_Slopes");
+        root.transform.SetParent(transform, false);
+        float x = MathSlotX[3];
+        float y = MathSlotTopY;
+        float z = MathDistrictOrigin.z + MathSlotLocalZ;
+        root.transform.localPosition = new Vector3(x, y, z);
+
+        var colors = new[]
+        {
+            new Color(0.35f, 0.55f, 0.95f),   // k=0.25 平缓：蓝
+            new Color(0.35f, 0.85f, 0.75f),   // k=0.5 中：青
+            new Color(0.95f, 0.60f, 0.30f),   // k=0.75 陡：橙
+        };
+
+        for (int i = 0; i < SlopeKs.Length; i++)
+        {
+            float k = SlopeKs[i];
+            // y = k·(x + L/2)：x = -L/2 处贴地，x = +L/2 处高 k·L
+            var data = MeshMath.ParametricSurface(
+                (px, py) => k * (px + SlopeLength * 0.5f), SlopeLength, 16);
+            var mat = MaterialKit.MakeMaterial(colors[i % colors.Length], 0.25f, 0f);
+            var go = MeshUtil.Spawn("Slope_" + k.ToString("F2").Replace(".", ""), data, mat, root.transform);
+            go.transform.localPosition = new Vector3(0f, 0f, (i - 1) * (SlopeWidth + 0.06f));
+            // 只压窄 Z 方向：高度 k·x 与 y 无关，所以缩放不会改变坡度
+            go.transform.localScale = new Vector3(1f, 1f, SlopeWidth / SlopeLength);
+            var mesh = go.GetComponent<MeshFilter>().sharedMesh;
+            MeshUtil.SetPlanarUVs(mesh, 0, 2);
+            go.AddComponent<MeshCollider>().sharedMesh = mesh;
+        }
+
+        BuildZone("Exhibit_Slopes", new Vector3(x, y + 0.8f, z), new Vector3(2.6f, 2.0f, 2.6f));
+    }
+
+    // =====================================================================
+    // Slot_3：分数地砖（小学区第一件）
+    // =====================================================================
+
+    /// 三行同样长的地砖，分别被切成 2、3、4 份 —— 走一遍就懂"分母越大，每份越小"。
+    /// 为什么不做成"一块地砖切成几份"：**三行并排**才能对比；单块只能看，不能比。
+    public static readonly int[] FractionRows = { 2, 3, 4 };
+    public const float FractionSize = 2.1f;
+    public const int FractionTexWidth = 512;
+    public const int FractionTexHeight = 384;
+    public float fractionsGlow = 0.30f;
+
+    void BuildFractionsFloor()
+    {
+        Texture2D tex = MakeFractionsTexture(FractionTexWidth, FractionTexHeight, FractionRows);
+        var mat = MaterialKit.MakeMaterial(Color.white, 0.10f, 0f);
+        MaterialKit.SetMainTexture(mat, tex, 1f);
+        MaterialKit.SetEmissionTexture(mat, tex, fractionsGlow);
+
+        var go = MeshUtil.Spawn("Exhibit_Fractions",
+            MeshMath.ParametricSurface((x, y) => 0f, FractionSize, 24), mat, transform);
+        float x = MathSlotX[2];
+        float y = MathSlotTopY + 0.03f;     // 抬 3 厘米，别和台面 Z-fighting
+        float z = MathDistrictOrigin.z + MathSlotLocalZ;
+        go.transform.localPosition = new Vector3(x, y, z);
+        var mesh = go.GetComponent<MeshFilter>().sharedMesh;
+        MeshUtil.SetPlanarUVs(mesh, 0, 2);   // 平面：X 是长度方向、Z 是三行
+        go.AddComponent<MeshCollider>().sharedMesh = mesh;
+
+        BuildZone("Exhibit_Fractions", new Vector3(x, y + 0.6f, z), new Vector3(2.6f, 1.6f, 2.6f));
+    }
+
+    /// 分数地砖的贴图：横向是"1"（整条长度），纵向是三行 1/2、1/3、1/4。
+    /// 每行按份数交替深浅，份与份之间压一条深缝 —— 数一数缝的条数就知道是几分之一。
+    static Texture2D MakeFractionsTexture(int w, int h, int[] parts)
+    {
+        var colors = new Color32[]
+        {
+            new Color32(235, 120, 70, 255),    // 1/2 行：暖橙
+            new Color32(70, 180, 190, 255),    // 1/3 行：青
+            new Color32(150, 115, 230, 255),   // 1/4 行：紫
+        };
+        var cols = new Color32[w * h];
+        int rows = parts.Length;
+        var gap = new Color32(18, 18, 22, 255);
+        for (int j = 0; j < h; j++)
+        {
+            float v = (j + 0.5f) / h;
+            int row = Mathf.Min(rows - 1, Mathf.FloorToInt(v * rows));
+            float rowT = v * rows - row;                 // 行内 0..1
+            bool rowGap = rowT < 0.04f || rowT > 0.96f;  // 行与行之间留缝
+            int n = parts[row];
+            Color baseColor = colors[row % colors.Length];
+            for (int i = 0; i < w; i++)
+            {
+                float u = (i + 0.5f) / w;
+                float partT = u * n - Mathf.Floor(u * n);   // 份内 0..1
+                bool partGap = partT < 0.035f;
+                bool edgeGap = u < 0.01f || u > 0.99f;
+                Color32 c;
+                if (rowGap || partGap || edgeGap) c = gap;
+                else
+                {
+                    // 相邻两份一深一浅，数起来不费眼
+                    int part = Mathf.Min(n - 1, Mathf.FloorToInt(u * n));
+                    float k = (part % 2 == 0) ? 1f : 0.62f;
+                    // 再叠一点点纵向明暗，让"一整条"看起来有厚度
+                    float shade = 0.85f + 0.15f * Mathf.Cos((rowT - 0.5f) * Mathf.PI);
+                    c = new Color32(
+                        (byte)Mathf.Clamp(baseColor.r * k * shade, 0f, 255f),
+                        (byte)Mathf.Clamp(baseColor.g * k * shade, 0f, 255f),
+                        (byte)Mathf.Clamp(baseColor.b * k * shade, 0f, 255f),
+                        255);
+                }
+                cols[j * w + i] = c;
+            }
+        }
+        var tex = new Texture2D(w, h, TextureFormat.RGB24, true);
+        tex.SetPixels32(cols);
+        tex.Apply(true);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+        return tex;
     }
 
     // =====================================================================
