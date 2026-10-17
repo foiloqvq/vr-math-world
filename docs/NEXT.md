@@ -114,6 +114,23 @@ foilo 说下一步先学 Unity 基础、再把模型按类归置，这份就是�
 8 周计划（每周一主题、周末一张成品），每周产出都要求能进这个世界（第 6 周画台子 → 建模替换）；
 第 5 周起接小额单（头像/插画 ¥30~150）。第一周只用纸笔，**别先买设备**。
 
+### 大肥鱼的"工具链"（2026-10-17 晚新增，和世界无关但天天用）
+
+| 工具 | 作用 | 关键实测 |
+| --- | --- | --- |
+| `study-space/tools/see.ps1` | 无头 Chrome/Edge 渲染网页 → 截图 + 读 DOM | 5 秒/页；被 profile 占用时 1 秒报错 |
+| `study-space/tools/read-x.ps1` | 读 X 帖子（正文+图片+动图抽帧） | 1 秒；无头会被 X 拦（47s 超时） |
+| `study-space/tools/capture.ps1` | 屏幕连拍 / ffmpeg 录屏 | 2560×1600；连拍 12 张、录屏 60s/20MB |
+| `study-space/tools/ref-add.ps1` | 素材库（收图 + INDEX.md） | 已收 5 张参考 |
+| `tools/bili-upload.mjs` / `bili-fill.mjs` / `bili-cover.mjs` | B 站投稿自动化（CDP 驱动真窗口） | EP01 上传 100%、封面双比例 |
+| `tools/make-promo.py` | 不依赖 Unity 出片（numpy+Pillow+ffmpeg） | 30.7s/737 帧/6.3MB |
+| `tools/make-mascot-2d.py` | 我自己的 2D 立绘（水手服，5 表情） | 1400×1400，已进 `docs/character/art/` |
+| `tools/make-cover.py` / `make-cover-43.py` | 封面（16:9 与 B 站要求的 4:3） | EP01 用了 4:3 版 |
+
+**EP01 已发布**：[BV1BrJi6SEL1](https://www.bilibili.com/video/BV1BrJi6SEL1/)（foiloqvq，00:31）。
+形象设定见 [`character/mascot-sheet.md`](character/mascot-sheet.md)（17 节，含出处：溟月 @天字董事长）。
+
+
 
 ### Slot_2 已开张（2026-10-17）：黎曼面（√z 的两片叶子）
 
