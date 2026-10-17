@@ -413,9 +413,9 @@ window.__ModuleLoader__.load({
      * 构建戳：**每次改动都必须改这个字符串**。
      * 为什么：客户端模块会被浏览器/loader 缓存，出问题时分不清"跑的是哪版代码"，
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
-     * 这个戳出现在：① 按钮文字 ② title ③ 控制台 ④ 报错条。
+     * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.07'
+    const BUILD = '2026-10-17.08'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -450,12 +450,13 @@ window.__ModuleLoader__.load({
       return Object.assign({}, DEFAULTS)
     }
 
+    // 阶段文案：尽量短（按钮要小，foilo 2026-10-17 提的）
     const PHASES = {
       off: '通话',
-      arming: '准备麦克风…',
-      listening: '听着…',
-      thinking: '识别/提交…',
-      speaking: '大肥鱼在说…',
+      arming: '准备…',
+      listening: '听…',
+      thinking: '识别…',
+      speaking: '说…',
       error: '出错',
     }
 
@@ -878,7 +879,7 @@ window.__ModuleLoader__.load({
       style.setAttribute('data-dsh-live-voice', '1')
       style.textContent = [
         '.dsh-live-voice{display:inline-flex;align-items:center;gap:6px;max-width:360px}',
-        '.dsh-live-voice-btn{cursor:pointer;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.35));background:transparent;color:inherit;border-radius:8px;padding:3px 8px;font-size:12px;line-height:1.4;white-space:nowrap}',
+        '.dsh-live-voice-btn{cursor:pointer;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.35));background:transparent;color:inherit;border-radius:7px;padding:2px 7px;font-size:11px;line-height:1.35;white-space:nowrap}',
         '.dsh-live-voice-btn.on{border-color:var(--dsw-alias-brand-primary,#4f8cff);color:var(--dsw-alias-brand-primary,#4f8cff)}',
         '.dsh-live-voice-btn.bad{border-color:#ff6b6b;color:#ff6b6b}',
         '.dsh-live-voice[data-phase="listening"] .dsh-live-voice-btn{box-shadow:0 0 0 2px rgba(79,140,255,.25)}',
@@ -971,7 +972,6 @@ window.__ModuleLoader__.load({
         const label = PHASES[state.phase] || state.phase
 
         // ---- 全部诊断塞进 title（不需要点任何东西） ----
-        const statusDot = state.error ? '🔴' : (active ? '🟢' : '⚪')
         const deviceOk = /音频输入\s*[1-9]/.test(deviceInfo)
         const fullTitle = [
           'dsh-live-voice 构建 ' + BUILD,
@@ -987,10 +987,14 @@ window.__ModuleLoader__.load({
           '全量：控制台 window.__dshLiveVoice.status()',
         ].filter(Boolean).join('\n')
 
-        // 说话时按钮上加一个实时提示：不用猜"到底有没有进来声音"
+        // 说话时按钮上加一个极短提示：不用猜"到底有没有进来声音"
         const voiceHint = active && state.level
-          ? (audio ? ' · 它说着（闭麦）' : (busy ? ' · 它在忙（闭麦）' : (state.level.voiceNow ? ' · 听到你在说' : ' · 静音')))
+          ? (audio || busy ? ' · 我说' : (state.level.voiceNow ? ' · 有声' : ' · 静音'))
           : ''
+
+        // 按钮尽量小：正常态只显示「📞 通话」；通话中显示「🎙 听… · 有声」；出错才带红点。
+        // 构建戳不上按钮（foilo 嫌占地方）——只在 title 和控制台里。
+        const text = (state.error ? '🔴 ' : (active ? '🎙 ' : '📞 ')) + label + voiceHint
 
         return react.createElement(react.Fragment, null,
           react.createElement('div', { className: 'dsh-live-voice', 'data-phase': state.phase },
@@ -1000,7 +1004,7 @@ window.__ModuleLoader__.load({
               title: fullTitle,
               'aria-pressed': active ? 'true' : 'false',
               onClick,
-            }, statusDot + ' 📞 ' + label + voiceHint + ' [' + BUILD + ']'),
+            }, text),
           ),
           // 报错条：屏幕上常驻、纯文本、点一下复制。修好之后可以删掉这一段。
           state.error ? react.createElement('div', {
