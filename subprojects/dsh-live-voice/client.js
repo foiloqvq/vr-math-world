@@ -470,7 +470,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.20'
+    const BUILD = '2026-10-17.21'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -1140,7 +1140,17 @@ window.__ModuleLoader__.load({
         const onClick = () => {
           pushDiag('click', '按钮被点了，enabled=' + state.enabled + ' phase=' + state.phase)
           try {
-            if (state.enabled) stop(); else start()
+            if (state.enabled) {
+              // 关：同时把"常听"关掉，否则刷新后又会自己开起来
+              autoListen = false
+              try { window.localStorage.setItem(AL_KEY, '0') } catch (e) {}
+              stop()
+            } else {
+              // 开：顺便记住状态（2026-10-17 foilo：通话和常听合并成一个按钮）
+              autoListen = true
+              try { window.localStorage.setItem(AL_KEY, '1') } catch (e) {}
+              start()
+            }
           } catch (e) {
             pushDiag('click-throw', e && e.message ? e.message : String(e))
             patch({ error: '点击处理出错：' + (e && e.message ? e.message : String(e)) })
@@ -1239,19 +1249,7 @@ window.__ModuleLoader__.load({
               'aria-pressed': active ? 'true' : 'false',
               onClick,
             }, text),
-            react.createElement('button', {
-              type: 'button',
-              className: 'dsh-live-voice-btn' + (autoListen ? ' on' : ''),
-              title: '常听模式：开着页面就一直在听，你说完自动发（会消耗 token）；再点一下关掉',
-              onClick: () => {
-                // 常听开关：状态存 localStorage，刷新后仍然生效
-                autoListen = !autoListen
-                try { window.localStorage.setItem(AL_KEY, autoListen ? '1' : '0') } catch (e) {}
-                pushDiag('auto-listen', autoListen ? '开' : '关')
-                try { if (autoListen && !state.enabled) start(); else if (!autoListen && state.enabled) stop() } catch (e) {}
-                forceTick()
-              },
-            }, autoListen ? '👂 常听中' : '👂 常听'),
+
             react.createElement('button', {
               type: 'button',
               className: 'dsh-live-voice-btn',
