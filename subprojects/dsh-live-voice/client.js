@@ -416,7 +416,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.11'
+    const BUILD = '2026-10-17.12'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -913,6 +913,11 @@ window.__ModuleLoader__.load({
       }
 
       // ---- 样式（随 fiber 卸载） ----
+      // 热更新/刷新时，旧实例的 style 可能还留在 head 里（fiber 没走完 dispose）——
+      // 先清掉同样标记的旧 style，避免样式叠加、也避免"改了半天没效果"。
+      try {
+        document.querySelectorAll('style[data-dsh-live-voice]').forEach((s) => s.remove())
+      } catch (e) {}
       const style = document.createElement('style')
       style.setAttribute('data-dsh-live-voice', '1')
       style.textContent = [
