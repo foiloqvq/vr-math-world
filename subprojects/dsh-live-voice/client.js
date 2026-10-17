@@ -416,7 +416,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.09'
+    const BUILD = '2026-10-17.10'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -428,8 +428,11 @@ window.__ModuleLoader__.load({
 
     /** 默认参数；可在 window.__dshLiveVoiceConfig 上覆盖（调试用）。 */
     const DEFAULTS = {
-      silenceMs: 700,
-      minSpeechMs: 200,
+      // 判停：说完多久没声音就算一句说完。
+      // 2026-10-17 从 700 提到 1200 —— foilo 说话时"想一想"的停顿被当成说完，
+      // 于是发出去的句子全是半截（"呃，就是我的。"）。宁可多等半秒，也别切人话。
+      silenceMs: 1200,
+      minSpeechMs: 300,
       maxUtteranceMs: 20000,
       calibrationMs: 600,
       // 触发门限：相对噪声本底的倍数 + 绝对下限。
