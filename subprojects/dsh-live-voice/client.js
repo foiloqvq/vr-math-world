@@ -416,7 +416,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.16'
+    const BUILD = '2026-10-17.17'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -461,7 +461,10 @@ window.__ModuleLoader__.load({
       threshold: 2,
       absFloor: 0.003,
       providerId: 'sensevoice-local',
-      language: 'auto',
+      // 2026-10-17 改：原来是 'auto'，结果短句/有噪音时被识别成日文（foilo 说"有时候报日文"）。
+      // SenseVoice 是中英日韩多语模型，自动判定对短音频不稳；钉成中文最可靠。
+      // 想临时改回：window.__dshLiveVoiceConfig = { language: 'auto' } 然后刷新。
+      language: 'zh',
       ttsUrl: 'http://127.0.0.1:7880/api/v1/tts/tasks',
       verbose: true,
     }
