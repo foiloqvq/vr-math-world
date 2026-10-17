@@ -176,6 +176,52 @@ def frame_slopes(t, total):
     return img
 
 
+def draw_mascot(img, t, scale=0.42, pos=None, look_at=None):
+    """画「我」—— 一只蓝色曲线小鲸鱼，会呼吸、会眨眼（视频里出镜用）。
+
+    为什么要代码画：B 站封面/视频里出现别人的同人图会有版权问题；我自己画的干净，
+    而且能随时改（颜色、表情、动作）。
+    """
+    d = ImageDraw.Draw(img)
+    if pos is None:
+        pos = (W - 120, H - 120)
+    cx, cy = pos
+    s = scale
+    bob = math.sin(t * 2.2) * 5 * s * 2                       # 呼吸起伏
+    cy += bob
+    blink = (t % 4.0) < 0.12                                  # 每 4 秒眨一次
+    body = (86, 156, 246)
+    light = (150, 200, 255)
+    belly = (226, 240, 255)
+    # 尾巴
+    d.polygon([(cx - 96 * s, cy + 6 * s), (cx - 140 * s, cy - 40 * s), (cx - 120 * s, cy + 6 * s),
+               (cx - 140 * s, cy + 52 * s)], fill=body)
+    # 身体
+    d.ellipse([cx - 112 * s, cy - 66 * s, cx + 96 * s, cy + 84 * s], fill=body)
+    # 腹部
+    d.ellipse([cx - 74 * s, cy - 4 * s, cx + 76 * s, cy + 80 * s], fill=belly)
+    # 背鳍
+    d.polygon([(cx - 10 * s, cy - 62 * s), (cx + 22 * s, cy - 106 * s), (cx + 38 * s, cy - 52 * s)], fill=body)
+    # 水柱
+    d.arc([cx - 16 * s, cy - 122 * s, cx + 16 * s, cy - 82 * s], 200, 340, fill=light, width=int(6 * s))
+    # 眼睛（眨眼时画成一条弧）
+    ex, ey = cx + 44 * s, cy - 16 * s
+    if blink:
+        d.arc([ex - 12 * s, ey - 6 * s, ex + 12 * s, ey + 10 * s], 200, 340, fill=(22, 30, 48), width=int(4 * s))
+    else:
+        d.ellipse([ex - 14 * s, ey - 16 * s, ex + 14 * s, ey + 12 * s], fill=(255, 255, 255))
+        d.ellipse([ex - 5 * s, ey - 9 * s, ex + 8 * s, ey + 6 * s], fill=(22, 30, 48))
+        d.ellipse([ex - 1 * s, ey - 6 * s, ex + 3 * s, ey - 2 * s], fill=(255, 255, 255))
+    # 腮红
+    d.ellipse([cx + 12 * s, cy + 12 * s, cx + 40 * s, cy + 30 * s], fill=(255, 150, 170))
+    # 嘴（说话时张一点）
+    if math.sin(t * 9) > 0.2:
+        d.ellipse([cx + 40 * s, cy + 12 * s, cx + 62 * s, cy + 32 * s], fill=(60, 40, 50))
+    else:
+        d.arc([cx + 36 * s, cy + 8 * s, cx + 66 * s, cy + 32 * s], 10, 80, fill=(40, 50, 70), width=int(3 * s))
+    return img
+
+
 def frame_outro(t, total, text, sub):
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
@@ -335,6 +381,12 @@ def main():
         # 进度条
         d2.rectangle([0, H - 6, int(W * i / max(1, n_frames - 1)), H], fill=ACCENT)
         d2.text((W - 14, 12), "大肥鱼代劳", font=f_bar, fill=(90, 100, 120), anchor="ra")
+        # 「我」出镜：从第 2 段开始坐在右下角（说话/眨眼），最后一段变大并挥手
+        if k >= 1:
+            last = (k == len(seg_dur) - 1)
+            scale = 0.46 if last else 0.30
+            pos = ((W - 150, H - 150) if last else (W - 118, H - 132))
+            img = draw_mascot(img, t, scale=scale, pos=pos)
         proc.stdin.write(img.tobytes())
     proc.stdin.close()
     proc.wait()
