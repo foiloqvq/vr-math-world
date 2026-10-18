@@ -96,7 +96,7 @@ def setup_scene(res):
     scene.render.resolution_x = 1920
     scene.render.resolution_y = res
     scene.render.resolution_percentage = 100
-    scene.render.film_transparent = False
+    scene.render.film_transparent = True   # 透明底，方便叠到 2D 视频上
     scene.world = bpy.data.worlds.new("W")
     scene.world.use_nodes = True
     bg = scene.world.node_tree.nodes["Background"]
@@ -111,6 +111,7 @@ def setup_scene(res):
         except TypeError:
             scene.render.engine = "BLENDER_WORKBENCH"
     scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode = "RGBA"
 
     cam_data = bpy.data.cameras.new("Cam")
     cam = bpy.data.objects.new("Cam", cam_data)
