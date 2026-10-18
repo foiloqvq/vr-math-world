@@ -470,7 +470,7 @@ window.__ModuleLoader__.load({
      * 就变成瞎猜（2026-10-17 就吃过这个亏：按钮还显示英文 error，说明新代码没生效）。
      * **2026-10-17 起按钮上不再显示它**（foilo 嫌占地方）——只出现在 title / 控制台 / 报错条里。
      */
-    const BUILD = '2026-10-17.22'
+    const BUILD = '2026-10-18.23'
 
     // 依赖声明（照 app 内部的写法：`inject = ['remote', 'remote.job']`）：
     // - 'slots'           ：输入行的 slot 注册
@@ -1217,6 +1217,45 @@ window.__ModuleLoader__.load({
         // ---- 我们自己的两个「给大肥鱼派活」按钮（2026-10-17 foilo：把开浏览器那些东西做进插件）----
         // 原理：点一下 → 往当前会话投一条 prompt（和语音提交同一条通道），
         // 我收到就会去跑 see.ps1 / capture.ps1 —— 相当于给我一个"眼睛"按钮。
+
+        /** 选一个视频文件 → POST 到本地收件服务（127.0.0.1:7891）→ 让大肥鱼审片。 */
+        const pickVideoToReview = () => {
+          try {
+            const input = document.createElement('input')
+            input.type = 'file'
+            input.accept = 'video/*'
+            input.style.display = 'none'
+            document.body.appendChild(input)
+            input.addEventListener('change', async () => {
+              const file = input.files && input.files[0]
+              try { input.remove() } catch (e) {}
+              if (!file) return
+              pushDiag('video-upload', '开始上传 ' + file.name + ' ' + Math.round(file.size / 1024 / 1024) + 'MB')
+              try {
+                const res = await fetch('http://127.0.0.1:7891/upload', {
+                  method: 'POST',
+                  headers: { 'X-Filename': encodeURIComponent(file.name), 'Content-Type': 'application/octet-stream' },
+                  body: file,
+                })
+                const j = await res.json()
+                if (!j || !j.ok) throw new Error((j && j.error) || ('HTTP ' + res.status))
+                pushDiag('video-upload', '已上传 ' + j.path)
+                const mb = (j.size / 1024 / 1024).toFixed(1)
+                const r = await promptRemote(activeSessionId,
+                  '我刚上传了剪辑版视频：' + j.path + '（' + mb + 'MB）\n帮我审一下：用 vr-math-world/tools/review-video.py 抽帧，然后逐段给意见（精确到秒）。',
+                )
+                if (!r || !r.ok) pushDiag('video-prompt-fail', (r && r.reason) || '投递失败')
+              } catch (e) {
+                pushDiag('video-upload-fail', e && e.message ? e.message : String(e))
+                patch({ error: '视频上传失败：' + (e && e.message ? e.message : String(e)) + '（本地收件服务开着吗？）' })
+              }
+            })
+            input.click()
+          } catch (e) {
+            pushDiag('video-pick-fail', e && e.message ? e.message : String(e))
+          }
+        }
+
         const askToLook = (kind) => {
           try {
             const url = kind === 'web'
@@ -1263,6 +1302,13 @@ window.__ModuleLoader__.load({
               title: '让大肥鱼截一张你现在的屏幕',
               onClick: () => askToLook('shot'),
             }, '📷 屏'),
+            // 2026-10-18 foilo：剪好的视频直接甩给我审 —— 选文件→传本地服务→我抽帧看
+            react.createElement('button', {
+              type: 'button',
+              className: 'dsh-live-voice-btn',
+              title: '上传剪好的视频给我审（选文件即可，最大 500MB）',
+              onClick: () => pickVideoToReview(),
+            }, '📤 视频'),
           ),
           // 报错条：屏幕上常驻、纯文本、点一下复制。修好之后可以删掉这一段。
           state.error ? react.createElement('div', {
