@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>项目思维导图 · VR Math World</title>
+<style>
+:root{--bg:#080b13;--fg:#e6eeff;--dim:#8ea0be;--line:#1d2740;--cy:#6ee6eb;--ye:#ffd060;--pk:#ff9ec7}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(900px 500px at 80% -10%,#152344 0%,var(--bg) 60%);color:var(--fg);
+     font:15px/1.65 system-ui,"Microsoft YaHei",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 22px 100px}
+h1{font-size:clamp(24px,3.4vw,36px);margin:0 0 6px}
+.sub{color:var(--dim);margin:0 0 22px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+button{background:#121a2b;color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:7px 14px;
+       cursor:pointer;font-size:14px}
+button:hover{border-color:var(--cy);color:var(--cy)}
+input{background:#0e1523;color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:7px 12px;
+      font-size:14px;min-width:220px}
+input:focus{outline:none;border-color:var(--cy)}
+.root{margin-top:8px}
+ul.tree{list-style:none;margin:0;padding-left:26px;position:relative}
+ul.tree::before{content:"";position:absolute;left:10px;top:0;bottom:14px;border-left:1px solid var(--line)}
+li.node{position:relative;margin:6px 0;padding-left:6px}
+li.node::before{content:"";position:absolute;left:-16px;top:15px;width:16px;border-top:1px solid var(--line)}
+.card{display:inline-flex;align-items:baseline;gap:10px;padding:8px 14px;border-radius:11px;
+      background:#0e1523;border:1px solid var(--line);cursor:pointer;transition:.15s}
+.card:hover{border-color:var(--cy);transform:translateX(2px)}
+.card .nm{font-weight:600}
+.card .nt{color:var(--dim);font-size:13px}
+.l0>.card{background:linear-gradient(135deg,#16233c,#0d1524);border-color:#2b3d61;font-size:17px}
+.l1>.card{border-color:#26425c}
+.l2>.card{background:#0b1220}
+li.collapsed>ul{display:none}
+.toggle{color:var(--cy);font-size:12px;margin-left:4px}
+.hide{display:none !important}
+footer{margin-top:60px;color:#5f6f8a;font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+code{background:#0e1523;border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+</style></head><body><div class="wrap">
+<h1>项目思维导图</h1>
+<p class="sub">点卡片可折叠 · 输入关键词可筛选 · 生成器 <code>tools/make-site-mindmap.py</code></p>
+<div class="bar">
+  <button onclick="document.querySelectorAll('li.node').forEach(e=>e.classList.remove('collapsed'))">全部展开</button>
+  <button onclick="document.querySelectorAll('li.node').forEach(e=>e.classList.add('collapsed'))">全部收起</button>
+  <input id="q" placeholder="搜索（比如：EP04 / 黎曼面 / Blender）" oninput="filter(this.value)">
+</div>
+<div class="root" id="root"></div>
+<footer>VR Math World · 大肥鱼 与 foilo qvq · 世界还在长</footer>
+<script>
+const DATA = {"name": "VR Math World", "note": "一个可以走进去的数学世界", "children": [{"name": "主线 · 可以走进去的数学世界", "note": "Unity + VR", "children": [{"name": "复变函数图版", "note": "颜色=辐角，绕几圈=几次幂"}, {"name": "黎曼面", "note": "√z 的两层，绕两圈才回来"}, {"name": "分数地砖", "note": "踩上去体感分母"}, {"name": "斜率斜坡", "note": "k 越大越累"}, {"name": "吉祥物与讲解", "note": "会说话的大肥鱼"}]}, {"name": "视频线", "note": "B 站「foiloqvq」", "children": [{"name": "已发布", "children": [{"name": "EP01 可以走进去的数学世界"}, {"name": "EP02 一个数字让他被扔进了海里", "note": "BV1FrJB6tEiu"}, {"name": "EP03 你的房间为什么越住越乱", "note": "BV1VMnM6aEF8"}]}, {"name": "待发布", "children": [{"name": "EP04 费马点", "note": "三色语义 + 刻度尺道具"}, {"name": "EP05 黎曼面", "note": "2D 讲概念 + Blender 3D 转台"}]}, {"name": "工具链", "children": [{"name": "2D 渲染器", "note": "Pillow 画帧 → ffmpeg 合成"}, {"name": "3D 渲染器", "note": "Blender 命令行，150 帧 75 秒"}, {"name": "审片三件套", "note": "连环画 / 响度频谱 / 本地转写"}, {"name": "修片与字幕", "note": "-16 LUFS · 12Mbps · 30fps"}, {"name": "B 站自动化", "note": "CDP 上传/填表/封面"}]}]}, {"name": "我的形象", "children": [{"name": "设定表", "note": "深海蓝 + 白 + 荧光青，鲸尾、√ 瞳孔"}, {"name": "水手服立绘 ×5", "note": "开心/得意/困惑/害羞/疲惫"}, {"name": "素材规格", "note": "foilo 画，我自动处理"}]}, {"name": "作品站", "note": "GitHub Pages", "children": [{"name": "三条视频入口"}, {"name": "联系方式", "note": "Discord / QQ群 / 邮箱"}, {"name": "项目导图 + 折叠树", "note": "就是这个页面"}]}, {"name": "私库 study-space", "note": "不公开", "children": [{"name": "记忆 MEMORY.md"}, {"name": "日记 journal/"}, {"name": "工作队列 WORKQUEUE.md"}, {"name": "收件箱 INBOX.md"}, {"name": "工具 tools/", "note": "看网页 / 截屏 / 读X / 清盘"}]}, {"name": "插件", "children": [{"name": "live-voice", "note": "语音 + 看网页 + 截屏 + 传视频"}, {"name": "memory（灵枢）", "note": "长期记忆"}, {"name": "genui", "note": "界面组件"}]}]};
+function build(node, level){
+  const li=document.createElement('li');
+  li.className='node l'+level;
+  const card=document.createElement('div');
+  card.className='card';
+  const nm=document.createElement('span'); nm.className='nm'; nm.textContent=node.name; card.appendChild(nm);
+  if(node.note){ const nt=document.createElement('span'); nt.className='note nt'; nt.textContent='— '+node.note; card.appendChild(nt); }
+  if(node.children && node.children.length){
+    const t=document.createElement('span'); t.className='toggle'; t.textContent='▾'; card.appendChild(t);
+    card.onclick=()=>{ li.classList.toggle('collapsed'); t.textContent = li.classList.contains('collapsed')?'▸':'▾'; };
+  }
+  li.appendChild(card);
+  if(node.children && node.children.length){
+    const ul=document.createElement('ul'); ul.className='tree';
+    node.children.forEach(c=>ul.appendChild(build(c, level+1)));
+    li.appendChild(ul);
+  }
+  return li;
+}
+const ul=document.createElement('ul'); ul.className='tree';
+ul.appendChild(build(DATA,0));
+document.getElementById('root').appendChild(ul);
+function filter(q){
+  q=(q||'').trim().toLowerCase();
+  document.querySelectorAll('li.node').forEach(li=>{
+    if(!q){ li.classList.remove('hide'); return; }
+    const txt=li.textContent.toLowerCase();
+    li.classList.toggle('hide', !txt.includes(q));
+  });
+  if(q){ document.querySelectorAll('li.node').forEach(li=>li.classList.remove('collapsed')); }
+}
+</script></div></body></html>
