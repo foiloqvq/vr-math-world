@@ -188,6 +188,19 @@ def f_3d(t, dur, frame_idx):
     return img
 
 
+def f_outro3d(t, dur, frame_idx):
+    """结尾：3D 模型当背景，上面盖标题 —— 让最后一句配音也有画面呼应。"""
+    img = f_3d(t, dur, frame_idx)
+    d = ImageDraw.Draw(img)
+    def outlined(xy, text, f, fill, halo=(3, 6, 11)):
+        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, 2), (-2, 2), (2, -2)):
+            d.text((xy[0] + dx, xy[1] + dy), text, font=f, fill=halo, anchor="mm")
+        d.text(xy, text, font=f, fill=fill, anchor="mm")
+    outlined((W // 2, 250), "黎曼面", font(58, True), FG)
+    outlined((W // 2, 328), "让多值函数有一个可以站的地方", font(26), CYA)
+    return img
+
+
 def f_outro(t, dur):
     img, d = base_img()
     center(d, (W // 2, 230), "黎曼面", font(64, True), FG)
@@ -198,7 +211,7 @@ def f_outro(t, dur):
     return img
 
 
-SEGS = [f_hook, f_two, f_loop, f_multivalue, f_two_sheets, f_turn_sheet, f_3d, f_3d, f_close, f_outro]
+SEGS = [f_hook, f_two, f_loop, f_multivalue, f_two_sheets, f_turn_sheet, f_3d, f_outro3d]
 
 SUBS = [
     ("一个数开平方，答案是不是只有一个？", "Does a square root have only one answer?"),
@@ -208,9 +221,7 @@ SUBS = [
     ("怎么办？把平面拆成两层。", "The fix: split the plane into two sheets."),
     ("每绕原点一圈，就翻到另一层。", "Each lap around zero flips you to the other sheet."),
     ("绕两圈才回来，两层正好接上。", "Two laps later, the sheets join up."),
-    ("这个东西，叫黎曼面。", "This object is a Riemann surface."),
-    ("这就是为什么 √z 有两个答案。", "That's why sqrt(z) has two answers."),
-    ("我是大肥鱼，下期见。", "I'm DaFeiyu. See you next time."),
+    ("我是大肥鱼，这个是黎曼面。", "I'm DaFeiyu. This is a Riemann surface."),
 ]
 
 
@@ -246,8 +257,8 @@ def main():
             raise SystemExit("缺配音: " + p)
 
     # 8 句配音 → 10 个画面段（第 7、8 段共用最后两句，都是 3D）
-    pads = [0.35, 0.4, 0.35, 0.35, 0.4, 0.35, 0.5, 0.35, 0.4, 1.8]
-    seg_line = [0, 1, 2, 3, 4, 5, 6, 7, 7, 7]   # 画面段 → 用第几句配音（最后几段复用）
+    pads = [0.35, 0.4, 0.35, 0.35, 0.4, 0.35, 1.2, 2.2]
+    seg_line = [0, 1, 2, 3, 4, 5, 6, 7]   # 一句一段，一一对应
     audio, dur_line, sr = [], [], None
     for p in lines:
         d, s = read_wav(p)
@@ -301,7 +312,7 @@ def main():
 
     # 3D 段起止（第 7、8 段）
     t_start = sum(seg_dur[:6])
-    t_end = t_start + seg_dur[6] + seg_dur[7]
+    t_end = sum(seg_dur)
     for i in range(n_frames):
         t = i / FPS
         k, acc = -1, 0.0
@@ -317,7 +328,10 @@ def main():
         if t_start <= t < t_end and n3d:
             frac = (t - t_start) / max(1e-6, (t_end - t_start))
             idx = 1 + int(frac * (n3d - 1))
-            img = f_3d(local, seg_dur[k], idx)
+            if k == len(SEGS) - 1:
+                img = f_outro3d(local, seg_dur[k], idx)   # 结尾：3D 底 + 标题
+            else:
+                img = f_3d(local, seg_dur[k], idx)
         else:
             img = SEGS[k](local, seg_dur[k])
 
