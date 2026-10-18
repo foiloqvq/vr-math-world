@@ -967,11 +967,37 @@ window.__ModuleLoader__.load({
         } catch (e) {}
       }
 
+
+      /** 输入框里如果还留着刚才那句（兜底写入的残留），全选删掉 —— 否则会被当成排队消息再发一遍。 */
+      const clearComposerIfStale = (text) => {
+        try {
+          const probe = String(text || '').replace(/\s+/g, '').slice(0, 8)
+          if (probe.length < 3) return
+          const el = document.activeElement
+          const editor = (el && (el.isContentEditable || el.tagName === 'TEXTAREA' || el.tagName === 'INPUT'))
+            ? el
+            : document.querySelector('[contenteditable="true"], textarea')
+          if (!editor) return
+          const current = String(editor.innerText || editor.value || '').replace(/\s+/g, '')
+          if (!current.includes(probe)) return
+          // 全选 → 删除
+          const fire = (type, opts) => editor.dispatchEvent(new KeyboardEvent(type, Object.assign({
+            bubbles: true, cancelable: true, composed: true,
+          }, opts)))
+          fire('keydown', { key: 'a', code: 'KeyA', keyCode: 65, which: 65, ctrlKey: true })
+          fire('keydown', { key: 'Delete', code: 'Delete', keyCode: 46, which: 46 })
+          fire('keyup', { key: 'Delete', code: 'Delete', keyCode: 46, which: 46 })
+          pushDiag('composer-cleared', '清掉残留：' + probe)
+        } catch (e) {
+          pushDiag('composer-clear-fail', e && e.message ? e.message : String(e))
+        }
+      }
+
       const submitTranscript = async (text) => {
         postDeliverLog({ at: Date.now(), path: 'direct-attempt', text: String(text).slice(0, 60) })
         const direct = await promptRemote(activeSessionId, text)
         pushDiag('submit-direct', (direct && direct.ok ? 'ok' : ('fail: ' + ((direct && direct.reason) || '?'))))
-        if (direct && direct.ok) { record('heard', text); return true }
+        if (direct && direct.ok) { record('heard', text); clearComposerIfStale(text); return true }
         // 关键：投递报失败 ≠ 真没送到。等 1.5 秒看屏幕，出现过就不兜底（否则一句话发两遍）
         await new Promise((r) => setTimeout(r, 1500))
         if (alreadyVisible(text)) {
@@ -981,7 +1007,9 @@ window.__ModuleLoader__.load({
         }
         postDeliverLog({ at: Date.now(), path: 'fallback', text: String(text).slice(0, 60) })
         pushDiag('submit-fallback', '改走输入框兜底')
-        return submitViaComposer(text)
+        const okFb = submitViaComposer(text)
+        setTimeout(() => clearComposerIfStale(text), 900)
+        return okFb
       }
 
       // 2026-10-18 foilo 反馈"我说一句，它复制一句" —— 加去重闸门：
