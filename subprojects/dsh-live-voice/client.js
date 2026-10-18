@@ -943,9 +943,29 @@ window.__ModuleLoader__.load({
         }
       }
 
+      /** 屏幕上是否已经出现这句话（判断"直接投递"其实已经成功，避免兜底重复发）。 */
+      const alreadyVisible = (text) => {
+        try {
+          const probe = String(text || '').replace(/\s+/g, '').slice(0, 10)
+          if (probe.length < 4) return false
+          const body = document.body ? document.body.innerText.replace(/\s+/g, '') : ''
+          return body.includes(probe)
+        } catch (e) {
+          return false
+        }
+      }
+
       const submitTranscript = async (text) => {
         const direct = await promptRemote(activeSessionId, text)
-        if (direct.ok) { record('heard', text); return true }
+        pushDiag('submit-direct', (direct && direct.ok ? 'ok' : ('fail: ' + ((direct && direct.reason) || '?'))))
+        if (direct && direct.ok) { record('heard', text); return true }
+        // 关键：投递报失败 ≠ 真没送到。等 1.5 秒看屏幕，出现过就不兜底（否则一句话发两遍）
+        await new Promise((r) => setTimeout(r, 1500))
+        if (alreadyVisible(text)) {
+          pushDiag('submit-already-visible', '兜底跳过（屏幕上已经有了）')
+          record('heard', text)
+          return true
+        }
         pushDiag('submit-fallback', '改走输入框兜底')
         return submitViaComposer(text)
       }
