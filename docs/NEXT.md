@@ -26,6 +26,27 @@
   `Verify OK`（图版 顶点 9409 / UV 9409 / 贴图 True；地砖 顶点 16641 / UV 16641 / 贴图 True）
 - 最新提交见 `git log -1`
 
+## 二·五、2026-10-18 新增（视频线跑起来了）
+
+**视频这条线已经从"手工做一条"升级成"流水线 + 3D"**（详见 `docs/video/reference-style.md`）：
+
+| 能力 | 工具 | 状态 |
+| --- | --- | --- |
+| 项目导图（md + 单文件 HTML） | `tools/make-project-map.py` | ✅ 335 行树 / 可折叠 HTML |
+| 审画面（连环画） | `tools/review-video.py` | ✅ |
+| 审声音（LUFS/峰值/削波/静音/配乐 + 波形/频谱） | `tools/review-audio.py` | ✅ |
+| 听内容（本地 faster-whisper，29.5s→8.4s） | `tools/transcribe.py` | ✅ venv 在 `C:\dafeiyu-asr` |
+| 自动修片（-16 LUFS / 12Mbps / 30fps） | `tools/fix-video.py` | ✅ |
+| 字幕导出 | `tools/export-srt.py` | ✅ |
+| **真 3D（Blender 5.2 命令行）** | `tools/blender-riemann.py` | ✅ 150 帧 75 秒，透明底可叠 |
+| 作品站 | `site/index.html` | ✅ 三条视频入口 |
+| 收视频/审片按钮 | 插件 `📤 视频` + `127.0.0.1:7891` | ✅ |
+
+**已发布**：EP01 `BV1BrJi6SEL1` · EP02 `BV1FrJB6tEiu`(81 播) · EP03 `BV1VMnM6aEF8`(86 播)
+**待发布**：EP04《费马点》33.6s（投稿页已填好，封面已上传）· EP05《黎曼面》28.6s（2D+3D 混合）
+
+**新配方（照着 ref 视频拆的）**：3 秒一推进 / 颜色即语义 / 道具化 / 中英双语字幕 / 左下 EP 编号 / 立绘常驻右下角。
+
 ## 三、下一步（还没做的第一件事）
 
 **Slot_1 展品已经能变，而且是"分数幂"了（2026-10-17）**：
