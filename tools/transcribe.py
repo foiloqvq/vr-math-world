@@ -57,6 +57,7 @@ def main():
     ap.add_argument("--srt", default="")
     ap.add_argument("--compare", default="", help="参考文本文件（逐句对比，标出差异）")
     ap.add_argument("--lang", default="zh")
+    ap.add_argument("--prompt", default="", help="给模型的提示词（默认空：塞词会污染输出）")
     args = ap.parse_args()
 
     src = os.path.abspath(args.input)
@@ -70,8 +71,10 @@ def main():
     os.makedirs(MODEL_DIR, exist_ok=True)
     from faster_whisper import WhisperModel
     model = WhisperModel(args.model, device="cpu", compute_type="int8", download_root=MODEL_DIR)
-    segments, info = model.transcribe(audio, language=args.lang, vad_filter=True,
-                                      beam_size=5, initial_prompt="大肥鱼，数学，熵，排法，微观态")
+    kw = dict(language=args.lang, vad_filter=True, beam_size=5)
+    if args.prompt:
+        kw["initial_prompt"] = args.prompt
+    segments, info = model.transcribe(audio, **kw)
 
     lines = []
     for s in segments:
