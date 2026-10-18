@@ -42,7 +42,7 @@ public static class BuildScene
 
         // 玩家：曲面行走控制器（能走上莫比乌斯带、能跳、能切视角规格）
         var player = new GameObject("Player");
-        player.transform.position = new Vector3(9f, 7.7f, 46f);   // 站在可走莫比乌斯带上
+        player.transform.position = new Vector3(0f, 6f, -40f);   // 出生在数学区彩色地砖上方（一进来就看见导览板）
         var walker = player.AddComponent<SurfaceWalker>();
         walker.teleportTargets = new[]
         {
