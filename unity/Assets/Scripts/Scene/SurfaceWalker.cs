@@ -36,7 +36,16 @@ public class SurfaceWalker : MonoBehaviour
     public int presetIndex = 2;
     public float minEyeHeight = 0.5f;
     public float maxEyeHeight = 2.2f;
-    public KeyCode cyclePresetKey = KeyCode.V;
+    public KeyCode cyclePresetKey = KeyCode.V;    // 临时的：以后进菜单
+    public KeyCode crouchKey = KeyCode.C;         // 蹲下 / 起来（动作，不是预设）
+    public KeyCode proneKey = KeyCode.Z;          // 趴下 / 起来
+    public float crouchEyeHeight = 0.95f;
+    public float proneEyeHeight = 0.45f;
+    public float postureLerp = 6f;                // 蹲/趴的过渡速度
+
+    [System.NonSerialized] public bool crouching;
+    [System.NonSerialized] public bool prone;
+    float postureHeight = -1f;                    // 当前动作高度（-1 = 不在动作里）
 
     [Header("相机模式（F5 循环）")]
     public CamMode camMode = CamMode.FirstPerson;
@@ -101,7 +110,13 @@ public class SurfaceWalker : MonoBehaviour
         }
     }
 
+    /// 蹲/趴时的目标高度（不在动作里就返回预设高度）
+    public float PostureTargetHeight => prone ? proneEyeHeight : (crouching ? crouchEyeHeight : -1f);
+
     public float CurrentEyeHeight => playerHeight;
+
+    /// 当前姿态名字（给 HUD 用）
+    public string PostureName => prone ? "趴下" : (crouching ? "蹲下" : "站立");
 
     public string CurrentCamModeName
     {
@@ -154,6 +169,36 @@ public class SurfaceWalker : MonoBehaviour
     void Update()
     {
         // ---- 视角规格 / 相机模式 切换 ----
+        if (Input.GetKeyDown(crouchKey))
+        {
+            crouching = !crouching;
+            if (crouching) prone = false;
+        }
+        if (Input.GetKeyDown(proneKey))
+        {
+            prone = !prone;
+            if (prone) crouching = false;
+        }
+
+        // ---- 蹲/趴：把眼睛高度平滑挪到目标值，松开/站起时回到预设高度 ----
+        {
+            float want;
+            float target = PostureTargetHeight;
+            if (target > 0f)
+            {
+                want = target;
+            }
+            else
+            {
+                int pi = Mathf.Clamp(presetIndex, 0, (presetEyeHeights != null && presetEyeHeights.Length > 0) ? presetEyeHeights.Length - 1 : 0);
+                want = (presetEyeHeights != null && presetEyeHeights.Length > 0)
+                    ? Mathf.Clamp(presetEyeHeights[pi], minEyeHeight, maxEyeHeight)
+                    : playerHeight;
+            }
+            playerHeight = Mathf.Lerp(playerHeight, want, 1f - Mathf.Exp(-postureLerp * Time.deltaTime));
+            if (cam != null) cam.nearClipPlane = Mathf.Lerp(cam.nearClipPlane, 0.03f, Time.deltaTime * 4f);
+        }
+
         if (Input.GetKeyDown(cyclePresetKey) && presetNames != null && presetNames.Length > 0)
         {
             presetIndex = (presetIndex + 1) % presetNames.Length;

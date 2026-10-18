@@ -101,10 +101,10 @@ public class SpeedHud : MonoBehaviour
             line1 += string.Format("   ·   x {0,4:F0}  y {1,3:F0}  z {2,4:F0}", p.x, p.y, p.z);
         }
 
-        string line2 = "WASD 走 · Shift 跑 · 空格跳 · E 说话 · R 停 · 1-4 传送 · 鼠标环视";
+        string line2 = "WASD 走 · Shift 跑 · 空格跳 · C 蹲 · Z 趴 · E 说话 · R 停 · 1-4 传送 · 鼠标环视";
         if (walker != null)
-            line2 += string.Format("\n视角 [{0}] {1:F2}m · 相机 [{2}]",
-                walker.CurrentPresetName, walker.CurrentEyeHeight, walker.CurrentCamModeName);
+            line2 += string.Format("\n视角 [{0}] {1:F2}m · 姿态 [{2}] · 相机 [{3}]",
+                walker.CurrentPresetName, walker.CurrentEyeHeight, walker.PostureName, walker.CurrentCamModeName);
 
         Rect r1 = new Rect(pad, pad, width, lineH);
         GUI.Label(r1, line1, styleMain);
