@@ -271,6 +271,7 @@ public class ExhibitScene : MonoBehaviour
         BuildRiemannSurface();
         BuildFractionsFloor();
         BuildSlopesExhibit();
+        BuildProjectMapBoard();
     }
 
 
