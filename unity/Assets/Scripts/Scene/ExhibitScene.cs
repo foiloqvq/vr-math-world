@@ -304,6 +304,13 @@ public class ExhibitScene : MonoBehaviour
         var panel = MeshUtil.Spawn("ProjectMapPanel", MeshMath.PanelXY(1f, 8), mat, root.transform);
         // PanelXY 给的是单位方片；宽高比靠 localScale 拉出来（UV 仍是 0..1，不会重复）
         MeshUtil.SetPlanarUVs(panel.GetComponent<MeshFilter>().sharedMesh, 0, 1);
+        // PanelXY 的平面 UV 是自下而上的，而海报是从上往下读的 —— 把 V 翻过来，字才是正的
+        {
+            Mesh pm = panel.GetComponent<MeshFilter>().sharedMesh;
+            Vector2[] uvs = pm.uv;
+            for (int i = 0; i < uvs.Length; i++) uvs[i] = new Vector2(uvs[i].x, 1f - uvs[i].y);
+            pm.uv = uvs;
+        }
         panel.transform.localScale = new Vector3(ProjectMapWidth, ProjectMapHeight, 1f);
 
         var frameMat = MaterialKit.MakeMaterial(new Color(0.30f, 0.55f, 0.85f), 0.45f, 0.2f);
