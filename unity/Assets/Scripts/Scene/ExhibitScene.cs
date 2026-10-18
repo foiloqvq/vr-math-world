@@ -273,6 +273,54 @@ public class ExhibitScene : MonoBehaviour
         BuildSlopesExhibit();
     }
 
+
+    // =====================================================================
+    // 导览板：项目地图（贴图由 tools/make-vr-poster.py 生成到 Resources/Art/ProjectMap.png）
+    // 摆在传送落点前方左侧 —— 一进数学区就能看见"这是个什么样的项目"。
+    // =====================================================================
+
+    public const float ProjectMapWidth = 2.8f;
+    public const float ProjectMapHeight = 1.75f;
+    public const float ProjectMapGlow = 0.55f;
+
+    void BuildProjectMapBoard()
+    {
+        var tex = Resources.Load<Texture2D>("Art/ProjectMap");
+        if (tex == null)
+        {
+            Debug.LogWarning("[ExhibitScene] 缺少 Resources/Art/ProjectMap.png —— 导览板跳过（先跑 tools/make-vr-poster.py）");
+            return;
+        }
+
+        var root = new GameObject("Exhibit_ProjectMap");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(-6.2f, 1.62f, -44.5f);
+        root.transform.localRotation = Quaternion.Euler(0f, 22f, 0f);
+
+        var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
+        MaterialKit.SetMainTexture(mat, tex, 1f);
+        MaterialKit.SetEmissionTexture(mat, tex, ProjectMapGlow);
+        var panel = MeshUtil.Spawn("ProjectMapPanel", MeshMath.PanelXY(1f, 8), mat, root.transform);
+        // PanelXY 给的是单位方片；宽高比靠 localScale 拉出来（UV 仍是 0..1，不会重复）
+        MeshUtil.SetPlanarUVs(panel.GetComponent<MeshFilter>().sharedMesh, 0, 1);
+        panel.transform.localScale = new Vector3(ProjectMapWidth, ProjectMapHeight, 1f);
+
+        var frameMat = MaterialKit.MakeMaterial(new Color(0.30f, 0.55f, 0.85f), 0.45f, 0.2f);
+        float hw = ProjectMapWidth * 0.5f;
+        float hh = ProjectMapHeight * 0.5f;
+        float bar = 0.10f;
+        MakeBar(root.transform, frameMat, new Vector3(0f, hh, 0f), new Vector3(ProjectMapWidth + bar * 2f, bar, bar));
+        MakeBar(root.transform, frameMat, new Vector3(0f, -hh, 0f), new Vector3(ProjectMapWidth + bar * 2f, bar, bar));
+        MakeBar(root.transform, frameMat, new Vector3(-hw, 0f, 0f), new Vector3(bar, ProjectMapHeight, bar));
+        MakeBar(root.transform, frameMat, new Vector3(hw, 0f, 0f), new Vector3(bar, ProjectMapHeight, bar));
+
+        // 两条腿：看起来是"立在地上的展板"，而不是飘着的纸
+        MakeBar(root.transform, frameMat, new Vector3(-hw * 0.7f, -hh - 0.45f, 0f), new Vector3(0.08f, 0.9f, 0.08f));
+        MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.45f, 0f), new Vector3(0.08f, 0.9f, 0.08f));
+
+        BuildZone("Exhibit_ProjectMap", new Vector3(-6.2f, 1.5f, -44.5f), new Vector3(3.6f, 2.6f, 3.6f));
+    }
+
     // =====================================================================
     // Slot_4：一次函数斜坡（小学区/初中区交界）
     // =====================================================================
