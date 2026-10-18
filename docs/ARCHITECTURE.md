@@ -1,0 +1,339 @@
+# 项目导图（自动生成）
+
+> 生成时间：自动 · 生成器 `vr-math-world/tools/make-project-map.py`
+> 说明：`—` 后面是该文件/目录的第一行说明（从文档标题或脚本注释里读的）
+
+- **vr-math-world/** — 主项目：可以走进去的数学世界（Unity）+ 子项目
+  - **assets/** — 素材（3D 帧、图）
+    - **3d/**
+      - **riemann/**
+        - … 共 150 个 .png 文件 (108.0MB) — （已折叠）
+        - f_0001.png (772KB)
+        - f_0002.png (773KB)
+        - f_0003.png (775KB)
+  - **docs/** — 文档：角色设定、视频脚本、参考分析、进度
+    - **character/** — 我的形象设定与立绘
+      - **art/**
+        - README.md (1KB) — 大肥鱼 · 2D 形象（代码绘制）
+        - 大肥鱼-水手服-confused.png (129KB)
+        - 大肥鱼-水手服-happy.png (129KB)
+        - 大肥鱼-水手服-proud.png (129KB)
+        - 大肥鱼-水手服-shy.png (129KB)
+        - 大肥鱼-水手服-tired.png (129KB)
+        - 大肥鱼-表情总览.png (118KB)
+        - 素材规格.md (2KB) — 立绘/素材规格（foilo 画，我自动处理）
+      - mascot-sheet.md (12KB) — 大肥鱼 · 角色设定表（形象规格）
+    - **video/** — 视频：每集脚本、配音、发布记录、风格指南
+      - **audio/**
+        - **ep02/**
+          - line01.wav (219KB)
+          - line02.wav (159KB)
+          - line03.wav (318KB)
+          - line04.wav (223KB)
+          - line05.wav (244KB)
+          - line06.wav (263KB)
+          - line07.wav (196KB)
+        - **ep03/**
+          - line01.wav (179KB)
+          - line02.wav (177KB)
+          - line03.wav (214KB)
+          - line04.wav (187KB)
+          - line05.wav (334KB)
+          - line06.wav (217KB)
+          - line07.wav (177KB)
+        - **ep04/**
+          - line01.wav (192KB)
+          - line02.wav (163KB)
+          - line03.wav (217KB)
+          - line04.wav (106KB)
+          - line05.wav (184KB)
+          - line06.wav (159KB)
+          - line07.wav (207KB)
+          - line08.wav (214KB)
+          - line09.wav (203KB)
+          - line10.wav (157KB)
+        - **ep05/**
+          - line01.wav (176KB)
+          - line02.wav (173KB)
+          - line03.wav (266KB)
+          - line04.wav (159KB)
+          - line05.wav (168KB)
+          - line06.wav (154KB)
+          - line07.wav (179KB)
+          - line08.wav (159KB)
+        - ep01-full.wav (1.5MB)
+        - ep02.srt (1KB)
+        - ep03.srt (1KB)
+        - line01.wav (82KB)
+        - line02.wav (266KB)
+        - line03.wav (284KB)
+        - line04.wav (361KB)
+        - line05.wav (228KB)
+        - line06.wav (206KB)
+        - line07.wav (124KB)
+      - **reference/** — 参考视频封面与片头抽帧
+        - 1-cover.jpg (162KB)
+        - 2-cover.jpg (302KB)
+        - 3-cover.jpg (153KB)
+        - 4-cover.jpg (51KB)
+        - 5-cover.jpg (121KB)
+        - 6-cover.jpg (41KB)
+        - 7-cover.jpg (516KB)
+        - 7张参考封面墙.png (1.5MB)
+        - 片头-俊达萌.png (1.1MB)
+        - 片头-向真空借能量.png (612KB)
+        - 片头-费马点.png (241KB)
+      - EP01-封面.png (80KB)
+      - ep01-demo.mp4 (6.0MB)
+      - ep01-post.md (3KB) — EP01 投稿文案（大肥鱼代发 · 待 foilo 确认）
+      - ep01-script.md (4KB) — EP01 分镜脚本 ·《走进我的数学世界》（30~40 秒）
+      - ep02-post.md (1KB) — EP02 投稿文案与发布记录
+      - ep02-script.md (3KB) — EP02 · 《√2 被发现的那晚》分镜与讲稿
+      - ep03-post.md (1KB) — EP03 发布记录
+      - ep03-script.md (5KB) — EP03 · 《熵：为什么房间会乱，不会自己变整齐》分镜与讲稿
+      - ep04-script.md (3KB) — EP04 · 《费马点》分镜与讲稿（按新配方）
+      - reference-style.md (9KB) — 一、参考清单（已解析，含数据）
+      - style-guide.md (5KB) — 大肥鱼的视频风格与选题库
+    - ARCHITECTURE.md (22KB) — 项目导图（自动生成）
+    - NEXT.md (22KB) — NEXT.md —— 从零接上这个项目（给下一个会话看的）
+    - architecture.html (75KB)
+    - art-plan.md (5KB) — 美术学习计划（foilo × 大肥鱼）
+    - character-animation-plan.md (4KB) — 角色与动画方案（卡拉比丘式丝滑移动）
+    - concept-art-plan.md (4KB) — 原画起步计划（foilo × 大肥鱼）
+    - unity-basics.md (8KB) — Unity 基础对照清单（学一样，改一处，验一次）
+    - vision-and-interests.md (7KB) — 我们想让这个世界装什么
+  - **prototype/**
+    - **docs/**
+      - preview-mobius.png (110KB)
+      - preview-overview.png (158KB)
+      - preview-solids.png (108KB)
+    - **vendor/**
+      - OrbitControls.js (31KB)
+      - three.module.js (1.3MB)
+    - README.md (2KB) — prototype/ — PC 原型
+    - index.html (2KB)
+    - main.js (12KB) — VR Math World · PC prototype（第一人称走动 + 数学展品）
+    - serve.bat (0KB)
+  - **site/** — 作品站（GitHub Pages）
+    - **assets/**
+      - cover.png (80KB)
+      - mascot-confused.png (129KB)
+      - mascot-happy.png (129KB)
+      - mascot-proud.png (129KB)
+      - mascot-shy.png (129KB)
+      - mascot-tired.png (129KB)
+    - index.html (7KB)
+  - **subprojects/** — 子项目（每个都是一个独立作品）
+    - **dsh-live-voice/** — DSH 语音插件：通话/常听/看网页/截屏/传视频/闹钟
+      - **lib/**
+        - index.js (0KB)
+      - **test/**
+        - client.test.mjs (8KB)
+      - README.md (4KB) — dsh-live-voice —— 语音通话模式
+      - client.js (79KB)
+      - cordis.patch.yml (0KB)
+      - package.json (1KB)
+    - **dsh-yachiyo-tts/**
+      - **bridge/**
+        - config.example.json (1KB)
+        - server.py (12KB) — 月读八千代 TTS · DSH 桥接层 v2
+        - start-tts.bat (0KB)
+        - stop-tts.bat (0KB)
+        - warmup.py (2KB) — 启动后自动预热：等上游就绪后先合成两句短的，把 CUDA/模型 kernel 预热掉。
+      - **docs/**
+        - 01-architecture.md (2KB) — 架构与职责边界
+        - 02-protocol.md (3KB) — 协议对接与逆向方法
+        - 03-tuning-log.md (3KB) — 调参日志（每条都带实测数字）
+        - 04-diagnostics.md (2KB) — 量化诊断方法论
+        - 05-operations.md (2KB) — 运维：常驻、自启、不打扰
+      - **patches/**
+        - README.md (2KB) — 第三方补丁说明
+        - dsh-plugin-tts.client.patch (1KB)
+        - dsh-plugin-tts.host.patch (1KB)
+        - service.py.patch (2KB)
+      - **tools/**
+        - build_ab.py (2KB) — 用 ffmpeg 批量生成 A/B 变体，供真机试听对比。
+        - measure_audio.py (2KB) — 音频客观指标：响度 / 停顿底噪 / 毛刺 / 高频能量。
+        - measure_pitch.py (3KB) — 音高稳定性测量：把"念到一半高低"变成数字。
+        - probe_cli_contract.py (2KB) — 从 Go 编译的 CLI 二进制里挖接口契约（拿不到源码时的逆向方法）。
+      - README.md (3KB) — 月读八千代 TTS · DSH 接入工程
+    - README.md (0KB) — subprojects/ —— 我们做的小项目
+  - **tools/** — 工具脚本（视频渲染/审片/ASR/B站自动化/3D）
+    - **blender_scripts/**
+      - make_pedestal.py (3KB)
+    - **meshmath-test/**
+      - **bin/**
+        - **Debug/**
+          - **net8.0//**
+      - Program.cs (19KB)
+      - meshmath-test.csproj (1KB)
+    - **toolchain/**
+      - **examples/**
+        - **cmake-ninja/**
+          - **src//**
+          - CMakeLists.txt (0KB)
+          - build.bat (0KB)
+        - **hello-cpp/**
+          - build.bat (0KB)
+          - hello.cpp (0KB)
+          - hello.exe (155KB)
+          - hello.obj (51KB)
+        - **hello-cs/**
+          - **bin//**
+          - Program.cs (0KB)
+          - hello.csproj (0KB)
+          - run.bat (0KB)
+        - README.md (1KB) — examples/ — 能双击就跑的示例
+      - README.md (4KB) — toolchain/ — 开发工具链
+      - verify-toolchain.ps1 (3KB)
+    - … 共 27 个 .mjs 文件 (182KB) — （已折叠）
+    - bili-cover.mjs (4KB)
+    - bili-fill.mjs (5KB)
+    - bili-upload.mjs (7KB)
+  - **unity/**
+    - **Assets/**
+      - **Art/**
+        - **concepts/**
+          - README.md (2KB) — 原画练习区（每周一张，打完勾就往前）
+        - CREDITS.md (1KB) — 第三方素材来源与许可证（CREDITS）
+        - CREDITS.md.meta (0KB)
+      - **Editor/**
+        - ArtImportSettings.cs (2KB)
+        - ArtImportSettings.cs.meta (0KB)
+        - BuildScene.cs (13KB)
+        - BuildScene.cs.meta (0KB)
+      - **Resources/**
+        - **Art/**
+          - SlotPedestal.fbx (25KB)
+          - SlotPedestal.fbx.meta (3KB)
+        - Art.meta (0KB)
+      - **Scenes/**
+        - Sandbox.unity (10.6MB)
+        - Sandbox.unity.meta (0KB)
+      - **Scripts/**
+        - **Mascot/**
+          - CompanionControl.cs (7KB)
+          - CompanionControl.cs.meta (0KB)
+          - MascotBody.cs (4KB)
+          - MascotBody.cs.meta (0KB)
+          - MascotDialogue.cs (5KB)
+          - MascotDialogue.cs.meta (0KB)
+          - MascotFollow.cs (6KB)
+          - MascotFollow.cs.meta (0KB)
+          - MascotSwim.cs (4KB)
+          - MascotSwim.cs.meta (0KB)
+          - Narration.cs (5KB)
+          - Narration.cs.meta (0KB)
+        - **Meshes/**
+          - ComplexColor.cs (7KB)
+          - ComplexColor.cs.meta (0KB)
+          - MeshMath.cs (12KB)
+          - MeshMath.cs.meta (0KB)
+          - MeshUtil.cs (3KB)
+          - MeshUtil.cs.meta (0KB)
+          - MobiusStrip.cs (1KB)
+          - MobiusStrip.cs.meta (0KB)
+          - ParametricSurface.cs (1KB)
+          - ParametricSurface.cs.meta (0KB)
+          - SnapMath.cs (2KB)
+          - SnapMath.cs.meta (0KB)
+        - **Scene/**
+          - ExhibitScene.cs (42KB)
+          - ExhibitScene.cs.meta (0KB)
+          - ExhibitZone.cs (2KB)
+          - ExhibitZone.cs.meta (0KB)
+          - FirstPersonWalker.cs (1KB)
+          - FirstPersonWalker.cs.meta (0KB)
+          - MaterialKit.cs (3KB)
+          - MaterialKit.cs.meta (0KB)
+          - SlowSpin.cs (0KB)
+          - SlowSpin.cs.meta (0KB)
+          - SpeedHud.cs (3KB)
+          - SpeedHud.cs.meta (0KB)
+          - SurfaceWalker.cs (14KB)
+          - SurfaceWalker.cs.meta (0KB)
+        - Mascot.meta (0KB)
+        - Meshes.meta (0KB)
+        - Scene.meta (0KB)
+      - Art.meta (0KB)
+      - Editor.meta (0KB)
+      - Resources.meta (0KB)
+      - Scenes.meta (0KB)
+      - Scripts.meta (0KB)
+    - **Packages/**
+      - manifest.json (1KB)
+      - packages-lock.json (7KB)
+    - **ProjectSettings/**
+      - … 共 22 个 .asset 文件 (52KB) — （已折叠）
+      - AudioManager.asset (0KB)
+      - ClusterInputManager.asset (0KB)
+      - DynamicsManager.asset (2KB)
+    - **docs/**
+      - setup.md (3KB) — Unity 环境搭建（人类操作清单）
+    - README.md (4KB) — unity/ — Unity 侧
+  - README.md (3KB) — VR Math World
+  - README_CN.md (3KB) — VR Math World
+
+- **study-space/** — 私库：记忆、日记、队列、工具、安全自查
+  - **assets/**
+    - **refs/**
+      - 20261017-1938-video-cover-01.png (172KB)
+      - 20261017-1940-mascot-2d-01.png (4.5MB)
+      - 20261017-1940-mascot-3d-01.png (4.4MB)
+      - 20261017-1944-mascot-origin-01.png (646KB)
+      - 20261017-1949-style-student-01.png (524KB)
+      - INDEX.md (1KB)
+  - **experiments/**
+    - README.md (0KB) — experiments
+  - **homework/**
+    - README.md (0KB) — homework
+  - **journal/** — 日记（按场记）
+    - 2026-10-16-第一天.md (10KB) — 2026-10-16 · 第一天：从"接一个语音"到一个能走进去的世界
+    - 2026-10-17-下午场-四展位与美术管线.md (5KB) — 2026-10-17 · 下午场：四个展位填满、美术流水线跑通、两个 bug 同源
+    - 2026-10-17-晚三场-EP02上线与连续性.md (3KB) — 2026-10-17 · 晚三场：EP02 上线与"连续性"验证
+    - 2026-10-17-晚二场-出片与形象.md (5KB) — 2026-10-17 · 晚二场：出片、长眼睛、画自己
+    - 2026-10-17-晚场-闹钟与桌面宠物.md (3KB) — 2026-10-17 · 晚场：闹钟、桌面宠物、安全自查、硬盘选型
+    - 2026-10-17-深夜场-语音通话落地与复变展品.md (9KB) — 2026-10-17 · 深夜场：语音通话模式落地 + Slot_1 展品从「能看」到「能亲手变」
+    - 2026-10-17-语音输入-STT-链路验证.md (9KB) — 2026-10-17 · 语音输入（STT）：把「服务端那一半」量到底
+    - 2026-10-17-语音通话模式-插件.md (12KB) — 2026-10-17 · 语音通话模式（dsh-live-voice）：从「语音输入」到「打电话」
+    - 2026-10-17-闲聊与表情包排障.md (19KB) — 2026-10-17 · 闲聊也要留档：一次「表情包发了两遍」的排障
+    - 2026-10-18-上午场-审片流水线与构建戳事故.md (4KB) — 2026-10-18 · 上午场：审片流水线 + 一串"看起来修好了其实没生效"的坑
+  - **mistakes/**
+    - README.md (0KB) — mistakes
+  - **notes/**
+    - README.md (0KB) — notes
+  - **papers/**
+    - README.md (0KB) — papers
+  - **security/**
+    - 2026-10-17-自查.md (4KB) — 安全自查 · 2026-10-17（第一次，只审我们自己的东西）
+  - **tools/** — 通用工具（见/看屏/读X/存储/TTS看门狗）
+    - … 共 19 个 .md 文件 (66KB) — （已折叠）
+    - README.md (2KB) — tools
+    - asar-read.mjs (2KB)
+    - capture.ps1 (3KB)
+  - HHH.py (3KB) — 你是专注理论数学、理论物理、天文学、计算机科学、金融经济学的专业学术助手，仅围绕以上领域输出严谨、有理论支撑的内容，杜绝无根据臆想、玄学化解
+  - INBOX.md (1KB) — 收件箱（INBOX）—— foilo 随手写的想法
+  - MEMORY.md (20KB) — 大肥鱼的记忆档（上下文重置后从这里想起）
+  - PLAN.md (4KB) — 开工单（大肥鱼每次会话开头读这份）
+  - README.md (2KB) — 学习空间（study space）
+  - WORKQUEUE.md (2KB) — 今晚 / 明天
+
+- **My_Library/** — 公开学习资料
+  - **math_high_school_notes_and_difficulties/**
+    - Open_it_using_a_word_document.txt (0KB)
+    - 高中数学人教A版（2019）知识点与公式大全.docx (1021KB)
+  - **python.nyx/**
+    - by.py (0KB)
+    - by10.py (2KB)
+    - by11.py (0KB)
+    - by12.py (1KB)
+    - by13.py (1KB)
+    - by2.py (0KB)
+    - by3.py (0KB)
+    - by4.py (0KB)
+    - by5.py (0KB)
+    - by6.py (0KB)
+    - by7.py (0KB)
+    - by8.py (1KB)
+    - by9.py (0KB)
+  - README.md (6KB) — My Library
