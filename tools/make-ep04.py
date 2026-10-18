@@ -312,6 +312,12 @@ def paste_mascot(img, cx, cy, target_h=280, expr="happy"):
     return canvas.convert("RGB")
 
 
+def paste_corner(img, t, target_h=170, expr="happy"):
+    """常驻小立绘（右下角，轻微上下浮动）—— foilo 2026-10-18：人物一直挂在那儿。"""
+    bob = 5 * math.sin(t * 2.2)
+    return paste_mascot(img, W - 105, H - 205 + bob, target_h, expr)
+
+
 def f_outro(t, dur):
     img = fog(t, 10)
     d = ImageDraw.Draw(img)
@@ -425,6 +431,8 @@ def main():
             k = len(seg_dur) - 1
         local = t - acc
         img = SEGS[k](local, seg_dur[k])
+        if k != len(SEGS) - 1:          # 结尾那段已经有大的立绘
+            img = paste_corner(img, t)
 
         if not args.no_subs:
             d2 = ImageDraw.Draw(img)
