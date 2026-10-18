@@ -1266,7 +1266,7 @@ window.__ModuleLoader__.load({
                 pushDiag('video-upload', '已上传 ' + j.path)
                 const mb = (j.size / 1024 / 1024).toFixed(1)
                 const r = await promptRemote(activeSessionId,
-                  '我刚上传了剪辑版视频：' + j.path + '（' + mb + 'MB）\n帮我审一下：先跑 tools/review-video.py 抽帧看画面，再跑 tools/review-audio.py 量音频（响度/峰值/静音/配乐），然后逐段给意见（精确到秒）。',
+                  '我刚上传了剪辑版视频：' + j.path + '（' + mb + 'MB）\n帮我审一下：① tools/review-video.py 抽帧看画面 ② tools/review-audio.py 量音频 ③ 用 C:/dafeiyu-asr/Scripts/python.exe tools/transcribe.py 把配音转成文字，然后逐段给意见（精确到秒）。',
                 )
                 if (!r || !r.ok) pushDiag('video-prompt-fail', (r && r.reason) || '投递失败')
               } catch (e) {
