@@ -16,7 +16,7 @@ public class CompanionControl : MonoBehaviour
     public float narrationRange = 22f;    // 站得多近算"在展品旁边"（按水平距离，不看高低）
 
     [Header("调试显示")]
-    public bool showDebug = true;
+    public bool showDebug = false;      // 调试行默认收起（F1 看）
 
     static readonly string[] ExhibitNames =
     {
@@ -124,9 +124,10 @@ public class CompanionControl : MonoBehaviour
 
     void OnGUI()
     {
-        var small = new GUIStyle(GUI.skin.label) { fontSize = 14 };
+        float k = Mathf.Clamp(Screen.height / 1080f, 0.75f, 2f);
+        var small = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(11f * k) };
         small.normal.textColor = new Color(0.72f, 0.84f, 1f);
-        var prompt = new GUIStyle(GUI.skin.label) { fontSize = 19, alignment = TextAnchor.MiddleCenter };
+        var prompt = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(14f * k), alignment = TextAnchor.MiddleCenter };
         prompt.normal.textColor = new Color(1f, 0.96f, 0.7f);
         var shadow = new GUIStyle(prompt);
         shadow.normal.textColor = new Color(0f, 0f, 0f, 0.8f);

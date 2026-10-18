@@ -122,7 +122,8 @@ public class MascotDialogue : MonoBehaviour
         string text = Subtitle;
         if (string.IsNullOrEmpty(text)) return;
 
-        var style = new GUIStyle(GUI.skin.label) { fontSize = 22, alignment = TextAnchor.MiddleCenter, wordWrap = true };
+        float k = Mathf.Clamp(Screen.height / 1080f, 0.75f, 2f);
+        var style = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(16f * k), alignment = TextAnchor.MiddleCenter, wordWrap = true };
         style.normal.textColor = new Color(0.95f, 0.98f, 1f);
         var shadow = new GUIStyle(style);
         shadow.normal.textColor = new Color(0f, 0f, 0f, 0.75f);
