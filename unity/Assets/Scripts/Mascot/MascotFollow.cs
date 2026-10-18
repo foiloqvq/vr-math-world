@@ -42,6 +42,10 @@ public class MascotFollow : MonoBehaviour
     public Vector3 homeStation;
     public bool hasHome;
 
+    /// 停靠省电：回到站台并站定后，关掉朝向计算 / 呼吸 / 游泳动画（2026-10-18 foilo 要的）
+    public bool dockedIdle = true;
+    MascotSwim swim;
+
     float bobPhase;
     Vector3 lastPos;
     float lastSpeed;
@@ -82,6 +86,7 @@ public class MascotFollow : MonoBehaviour
             var walker = Object.FindFirstObjectByType<SurfaceWalker>();
             if (walker != null) target = walker.transform;
         }
+        swim = GetComponent<MascotSwim>();
         bobPhase = Random.value * 6.28f;
         lastPos = transform.position;
     }
@@ -97,6 +102,23 @@ public class MascotFollow : MonoBehaviour
     void LateUpdate()
     {
         float dt = Time.deltaTime;
+
+        // ---- 停靠省电：在站台站定后，不做朝向 / 呼吸 / 游泳，几乎不耗 CPU ----
+        if (dockedIdle && mode == Mode.Stay && hasHome && lookAtOverride == null)
+        {
+            bool arrived = Vector3.Distance(transform.position, homeStation) < 0.25f;
+            if (arrived)
+            {
+                if (swim != null && swim.enabled) swim.enabled = false;
+                DebugLine = string.Format("站台待机（省电）· 目标 {0}", homeStation);
+                return;
+            }
+        }
+        else if (swim != null && !swim.enabled)
+        {
+            swim.enabled = true;              // 离开站台，恢复游泳动画
+        }
+
         bobPhase += dt * bobFrequency * Mathf.PI * 2f;
         Vector3 before = transform.position;
 
