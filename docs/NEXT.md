@@ -378,3 +378,26 @@ body `{"text":"...","text_lang":"zh"}` → 返回 `audio/wav`（最小 JSON 即�
 
 **下一步**：① 主菜单 UI（把召唤/收回 AI、传送、展品切换挂上去）② VR 里能读导览板（走近按 E 讲解）
 ③ 把 `M` 键加进 HUD 提示行
+
+---
+
+## 高中数学进 VR（2026-10-18 夜）
+
+**课程地图**：`docs/CURRICULUM.md`（人教 A 版顺序 + 一数 BV147411K7xu 分P映射）
+
+**已进 VR**：
+- `Exhibit_MethodWall`（2.6, 1.55, -45.4）换元 + 双分类，贴图 `Resources/Art/MethodWall.png`
+- 生成后 `Verify OK`：objects 281 / meshes 245
+
+**已出图（My_Library/img/）**：
+- `方法-换元与双分类.png`
+- `集合-四种运算与三个坑.png`
+- `集合-子集的2n个.png`
+- `集合-交并补Venn.png`
+
+**下一步（按顺序）**：
+1. 集合 P8/P9/P10：交互大题板、易错警示牌、新定义拓展
+2. VR：子集金字塔（可走台阶）、三圆 Venn 区（站进去有文字提示）
+3. 第 2 章 常用逻辑用语（充分必要 / 全称存在量词）→ 「箭头门」展品
+
+**图形工具**：`study-space/tools/math_diagram_util.py`（混排字体，必用，否则符号变方框）
