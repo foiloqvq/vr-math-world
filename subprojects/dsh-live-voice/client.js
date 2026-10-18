@@ -1134,6 +1134,7 @@ window.__ModuleLoader__.load({
         '.dsh-live-voice-btn{cursor:pointer;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.35));background:transparent;color:inherit;border-radius:7px;padding:2px 7px;font-size:11px;line-height:1.35;white-space:nowrap}',
         '.dsh-live-voice-btn.on{border-color:var(--dsw-alias-brand-primary,#4f8cff);color:var(--dsw-alias-brand-primary,#4f8cff)}',
         '.dsh-live-voice-btn.bad{border-color:#ff6b6b;color:#ff6b6b}',
+  '.dsh-lv-more{display:inline-flex;gap:4px;margin-left:4px}',
         '.dsh-live-voice[data-phase="listening"] .dsh-live-voice-btn{box-shadow:0 0 0 2px rgba(79,140,255,.25)}',
         '.dsh-live-voice[data-phase="speaking"] .dsh-live-voice-btn{opacity:.6}',
         '.dsh-live-voice-err{color:#e5484d;font-size:12px;cursor:pointer;text-decoration:underline}',
@@ -1162,6 +1163,7 @@ window.__ModuleLoader__.load({
       // ---- 会话输入行里的通话开关 ----
       const CallButton = (props) => {
         const [, force] = react.useState(0)
+        const [moreOpen, setMoreOpen] = react.useState(false)
         forceTick = () => force((n) => n + 1)
         react.useEffect(() => subscribe(() => force((n) => n + 1)), [])
 
@@ -1351,25 +1353,33 @@ window.__ModuleLoader__.load({
               onClick,
             }, text),
 
+            // 2026-10-18 foilo：三个拓展功能收进一个「⋯」里，点开才展开，界面更干净
             react.createElement('button', {
               type: 'button',
-              className: 'dsh-live-voice-btn',
-              title: '让大肥鱼看一个网页（会打开一个网址输入框）',
-              onClick: () => askToLook('web'),
-            }, '👁 看'),
-            react.createElement('button', {
-              type: 'button',
-              className: 'dsh-live-voice-btn',
-              title: '让大肥鱼截一张你现在的屏幕',
-              onClick: () => askToLook('shot'),
-            }, '📷 屏'),
-            // 2026-10-18 foilo：剪好的视频直接甩给我审 —— 选文件→传本地服务→我抽帧看
-            react.createElement('button', {
-              type: 'button',
-              className: 'dsh-live-voice-btn',
-              title: '上传剪好的视频给我审（选文件即可，最大 500MB）',
-              onClick: () => pickVideoToReview(),
-            }, '📤 视频'),
+              className: 'dsh-live-voice-btn' + (moreOpen ? ' on' : ''),
+              title: '看网页 / 截屏 / 传视频',
+              onClick: () => setMoreOpen(!moreOpen),
+            }, moreOpen ? '⋯' : '⋯'),
+            moreOpen ? react.createElement('span', { className: 'dsh-lv-more' },
+              react.createElement('button', {
+                type: 'button',
+                className: 'dsh-live-voice-btn',
+                title: '让大肥鱼看一个网页',
+                onClick: () => { setMoreOpen(false); askToLook('web') },
+              }, '👁 看'),
+              react.createElement('button', {
+                type: 'button',
+                className: 'dsh-live-voice-btn',
+                title: '让大肥鱼截一张你现在的屏幕',
+                onClick: () => { setMoreOpen(false); askToLook('shot') },
+              }, '📷 屏'),
+              react.createElement('button', {
+                type: 'button',
+                className: 'dsh-live-voice-btn',
+                title: '上传剪好的视频给我审',
+                onClick: () => { setMoreOpen(false); pickVideoToReview() },
+              }, '📤 视频'),
+            ) : null,
           ),
           // 报错条：屏幕上常驻、纯文本、点一下复制。修好之后可以删掉这一段。
           state.error ? react.createElement('div', {
