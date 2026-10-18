@@ -10,11 +10,12 @@
  * 安全：只监听回环地址；只接受视频扩展名；文件名做净化，不允许路径穿越。
  */
 import { createServer } from 'node:http'
-import { createWriteStream, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs'
+import { appendFileSync, createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 
 const PORT = 7891
 const DEST = 'C:\\Users\\nb666\\Videos\\大肥鱼作品\\剪辑'
+const DIAG_LOG = 'C:\\Users\\nb666\\Videos\\大肥鱼作品\\剪辑\\diag.log'
 const OK_EXT = new Set(['.mp4', '.mov', '.mkv', '.webm', '.avi', '.gif', '.png', '.jpg', '.jpeg'])
 
 if (!existsSync(DEST)) mkdirSync(DEST, { recursive: true })
@@ -46,6 +47,34 @@ const server = createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ ok: true, dest: DEST, latest: latest() }))
+    return
+  }
+
+  if (req.method === 'POST' && req.url === '/diag') {
+    let body = ''
+    req.on('data', (c) => { body += c })
+    req.on('end', () => {
+      try {
+        const line = new Date().toISOString() + ' ' + body.slice(0, 2000) + '\n'
+        appendFileSync(DIAG_LOG, line)
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok: true }))
+      } catch (e) {
+        res.writeHead(500); res.end('fail')
+      }
+    })
+    return
+  }
+
+  if (req.method === 'GET' && req.url === '/diag') {
+    try {
+      const txt = readFileSync(DIAG_LOG, 'utf8').split('\n').slice(-200).join('\n')
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' })
+      res.end(txt)
+    } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' })
+      res.end('(no log yet)')
+    }
     return
   }
 

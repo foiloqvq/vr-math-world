@@ -955,7 +955,20 @@ window.__ModuleLoader__.load({
         }
       }
 
+
+      /** 把"这次提交到底发了什么"写到本地日志（127.0.0.1:7891/diag），便于查重。 */
+      const postDeliverLog = (obj) => {
+        try {
+          fetch('http://127.0.0.1:7891/diag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(Object.assign({ who: 'dsh-live-voice', build: BUILD }, obj)),
+          }).catch(() => {})
+        } catch (e) {}
+      }
+
       const submitTranscript = async (text) => {
+        postDeliverLog({ at: Date.now(), path: 'direct-attempt', text: String(text).slice(0, 60) })
         const direct = await promptRemote(activeSessionId, text)
         pushDiag('submit-direct', (direct && direct.ok ? 'ok' : ('fail: ' + ((direct && direct.reason) || '?'))))
         if (direct && direct.ok) { record('heard', text); return true }
@@ -966,6 +979,7 @@ window.__ModuleLoader__.load({
           record('heard', text)
           return true
         }
+        postDeliverLog({ at: Date.now(), path: 'fallback', text: String(text).slice(0, 60) })
         pushDiag('submit-fallback', '改走输入框兜底')
         return submitViaComposer(text)
       }
