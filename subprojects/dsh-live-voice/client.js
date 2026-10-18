@@ -485,7 +485,7 @@ window.__ModuleLoader__.load({
       // 判停：说完多久没声音就算一句说完。
       // 2026-10-17 从 700 → 1200 → 1500：foilo 说话时"想一想"的停顿被当成说完，
       // 发出去的句子全是半截。宁可多等，也别切人话。
-      silenceMs: 1500,
+      silenceMs: 2100,
       minSpeechMs: 300,
 
       // ---- 闹钟（foilo 2026-10-17 定：21:50 开工，23:00 收工睡觉）----
@@ -987,6 +987,15 @@ window.__ModuleLoader__.load({
           }
           patch({ lastHeard: text })
           pushDiag('transcribe-text', text)
+          {
+            const frag = normText(text)
+            const sinceLast = Date.now() - lastSubmitAt
+            if (lastSubmitAt > 0 && sinceLast < 4500 && frag.length > 0 && frag.length <= 8) {
+              pushDiag('submit-fragment-skipped', text + ' (gap ' + sinceLast + 'ms)')
+              patch({ phase: 'listening' })
+              return
+            }
+          }
           if (isDuplicate(text)) {
             pushDiag('submit-duplicate-skipped', text)
             patch({ phase: 'listening' })
