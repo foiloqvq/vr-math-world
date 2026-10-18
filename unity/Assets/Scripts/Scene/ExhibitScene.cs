@@ -740,10 +740,12 @@ public class ExhibitScene : MonoBehaviour
     {
         var big = MascotBody.Create("Mascot_BigFish", transform, 1.25f,
             new Color(0.30f, 0.56f, 0.92f), new Color(0.90f, 0.95f, 1f));
-        big.transform.localPosition = new Vector3(0f, 2.6f, 40f);
+        // 默认在 AI 站台待机（不跟着玩家）；按 M 才召回。
+        big.transform.localPosition = StationCenter + new Vector3(-0.85f, 1.15f, 0f);
         var bigFollow = big.AddComponent<MascotFollow>();
         bigFollow.followDistance = 5.5f;
         bigFollow.followHeight = 1.3f;   // 与主角相近高度，不再飘在天上
+        bigFollow.GoHome(StationCenter + new Vector3(-0.85f, 1.15f, 0f));   // 默认在站台待机
         var bigSwim = big.AddComponent<MascotSwim>();
         bigSwim.tailFrequency = 1.3f;
         bigSwim.finFrequency = 1.3f;
@@ -752,13 +754,14 @@ public class ExhibitScene : MonoBehaviour
 
         var small = MascotBody.Create("Mascot_SmallFish", transform, 0.62f,
             new Color(0.58f, 0.82f, 1f), new Color(1f, 0.97f, 0.99f));
-        small.transform.localPosition = new Vector3(1.4f, 2.4f, 37f);
+        small.transform.localPosition = StationCenter + new Vector3(0.85f, 1.15f, 0f);
         var smallFollow = small.AddComponent<MascotFollow>();
         smallFollow.target = big.transform;      // 妹妹跟着姐姐
         smallFollow.followDistance = 3.0f;
         smallFollow.followHeight = -0.2f;
         smallFollow.followLerp = 1.6f;
         smallFollow.bobFrequency = 1.3f;
+        smallFollow.GoHome(StationCenter + new Vector3(0.85f, 1.15f, 0f));   // 妹妹也在站台
         var smallSwim = small.AddComponent<MascotSwim>();
         smallSwim.tailFrequency = 1.9f;
         smallSwim.finFrequency = 1.9f;
