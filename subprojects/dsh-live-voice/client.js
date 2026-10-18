@@ -950,6 +950,21 @@ window.__ModuleLoader__.load({
         return submitViaComposer(text)
       }
 
+      // 2026-10-18 foilo 反馈"我说一句，它复制一句" —— 加去重闸门：
+      // 同一句话 6 秒内只提交一次；截断后完全相同的文本也不再发（识别重复触发/回声）。
+      let lastSubmitText = ''
+      let lastSubmitAt = 0
+      let submitting = false
+
+      const isDuplicate = (text) => {
+        const now = Date.now()
+        const norm = String(text || '').trim()
+        if (!norm) return true
+        if (submitting) return true
+        if (norm === lastSubmitText && now - lastSubmitAt < 6000) return true
+        return false
+      }
+
       const handleUtterance = async (samples) => {
         if (!state.enabled) return
         if (busy) { patch({ phase: 'speaking' }); pushDiag('utterance-dropped-busy'); return }
@@ -964,7 +979,16 @@ window.__ModuleLoader__.load({
           }
           patch({ lastHeard: text })
           pushDiag('transcribe-text', text)
+          if (isDuplicate(text)) {
+            pushDiag('submit-duplicate-skipped', text)
+            patch({ phase: 'listening' })
+            return
+          }
+          submitting = true
+          lastSubmitText = String(text).trim()
+          lastSubmitAt = Date.now()
           const ok = await submitTranscript(text)
+          submitting = false
           if (!ok) {
             patch({ phase: 'error', error: '发不出去：会话提交和输入框兜底都没成功，点右边 ⚠ 复制诊断给我' })
             pushDiag('submit-failed', text)
