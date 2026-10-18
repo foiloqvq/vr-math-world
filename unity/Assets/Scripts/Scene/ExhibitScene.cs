@@ -281,7 +281,7 @@ public class ExhibitScene : MonoBehaviour
     // AI 站台：两个跟班的待机区（按 M 召回/送回；以后接主菜单 UI 也走这里）
     // =====================================================================
 
-    public static readonly Vector3 StationCenter = new Vector3(6.5f, 0.46f, -40f);   // 出生点右侧（出生在 (0,6,-40)）
+    public static readonly Vector3 StationCenter = new Vector3(4.09f, 0.46f, -40f);   // 出生点右侧（foilo 2026-10-18 定 X=4.09）
     public const float StationRadius = 2.6f;
 
     void BuildMascotStation()
