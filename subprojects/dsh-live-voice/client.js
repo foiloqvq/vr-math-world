@@ -975,6 +975,7 @@ window.__ModuleLoader__.load({
       let lastSubmitText = ''
       let lastSubmitAt = 0
       let submitting = false
+      let cooldownUntil = 0   // 提交后 6 秒内不再接新句子（硬闸门，防重复）
 
       // 归一化：只留汉字/字母/数字，忽略标点、空格、大小写差异
       const normText = (t) => String(t || '').replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '').toLowerCase()
@@ -995,6 +996,10 @@ window.__ModuleLoader__.load({
 
       const handleUtterance = async (samples) => {
         if (!state.enabled) return
+        if (Date.now() < cooldownUntil) {
+          pushDiag('utterance-cooldown', Math.round((cooldownUntil - Date.now()) / 1000) + 's 剩余')
+          return
+        }
         if (busy) { patch({ phase: 'speaking' }); pushDiag('utterance-dropped-busy'); return }
         try {
           patch({ phase: 'thinking' })
@@ -1026,6 +1031,7 @@ window.__ModuleLoader__.load({
           lastSubmitAt = Date.now()
           const ok = await submitTranscript(text)
           submitting = false
+          cooldownUntil = Date.now() + 6000
           if (!ok) {
             patch({ phase: 'error', error: '发不出去：会话提交和输入框兜底都没成功，点右边 ⚠ 复制诊断给我' })
             pushDiag('submit-failed', text)
