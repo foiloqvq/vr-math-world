@@ -956,12 +956,20 @@ window.__ModuleLoader__.load({
       let lastSubmitAt = 0
       let submitting = false
 
+      // 归一化：只留汉字/字母/数字，忽略标点、空格、大小写差异
+      const normText = (t) => String(t || '').replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '').toLowerCase()
+
       const isDuplicate = (text) => {
         const now = Date.now()
-        const norm = String(text || '').trim()
+        const norm = normText(text)
         if (!norm) return true
         if (submitting) return true
-        if (norm === lastSubmitText && now - lastSubmitAt < 6000) return true
+        if (now - lastSubmitAt > 12000) return false
+        const prev = normText(lastSubmitText)
+        if (!prev) return false
+        // 完全相同，或一条包含另一条（识别把半句/整句各发一次）
+        if (norm === prev) return true
+        if (norm.length >= 4 && prev.length >= 4 && (norm.includes(prev) || prev.includes(norm))) return true
         return false
       }
 
