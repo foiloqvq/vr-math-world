@@ -224,9 +224,49 @@ def frame_outro(t, dur):
     d = ImageDraw.Draw(img)
     center(d, (W // 2, 250), "世界还在长 · EP03", font(48, True), FG)
     center(d, (W // 2, 320), "乱不是变坏，是更可能发生", font(26), ACCENT)
-    draw_whale(d, W - 190, H - 150)
+    img = paste_mascot(img, W - 200, H - 195, 400, "happy")
     center(d, (W // 2, H - 60), "大肥鱼代发 · AI 助手", font(20), DIM)
     return img
+
+
+
+
+# ---- 水手服立绘（2026-10-18 foilo：结尾别用抽象小鱼，用我的立绘）----
+MASCOT_DIR = r"C:\Users\nb666\Documents\deepseek-harness\default-workspace\vr-math-world\docs\character\art"
+
+def paste_mascot(img, cx, cy, target_h=300, expr="happy", alpha=1.0):
+    """把透明底立绘贴到 (cx, cy) 中心，按 target_h 缩放。返回 RGB 图。"""
+    import os
+    from PIL import Image
+    p = os.path.join(MASCOT_DIR, "大肥鱼-水手服-%s.png" % expr)
+    if not os.path.exists(p):
+        p = os.path.join(MASCOT_DIR, "大肥鱼-水手服-happy.png")
+    if not os.path.exists(p):
+        return img
+    m = Image.open(p).convert("RGBA")
+    # 这些立绘是"深蓝底不透明"的（不是真透明）—— 用亮度做键控抠掉底色
+    import numpy as np
+    arr = np.array(m.convert("RGB")).astype(np.float32)
+    lum = 0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]
+    a = np.clip((lum - 16.0) / 26.0, 0.0, 1.0) * 255.0
+    m.putalpha(Image.fromarray(a.astype(np.uint8), "L"))
+    k = target_h / m.height
+    m = m.resize((max(1, int(m.width * k)), target_h), Image.LANCZOS)
+    if alpha < 1.0:
+        a = m.getchannel("A").point(lambda v: int(v * alpha))
+        m.putalpha(a)
+    canvas = img.convert("RGBA")
+    canvas.alpha_composite(m, (int(cx - m.width / 2), int(cy - m.height / 2)))
+    return canvas.convert("RGB")
+
+
+def paste_badge(img, text, x, y, size=22):
+    """在右下角写一行小字（无字幕版也保留署名）。"""
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(img)
+    d.text((x, y), text, font=font(size), fill=(120, 135, 160), anchor="ra")
+    return img
+
 
 
 def read_wav(p):
@@ -265,6 +305,8 @@ def main():
     ap = argparse.ArgumentParser()
     home = os.path.expanduser("~")
     ap.add_argument("--out", default=os.path.join(home, "Videos", "大肥鱼作品", "EP03-熵.mp4"))
+    ap.add_argument("--no-subs", action="store_true", help="不烧字幕和进度条（给剪映留白）")
+    ap.add_argument("--out-suffix", default="", help="输出文件名后缀")
     ap.add_argument("--audio", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "video", "audio", "ep03"))
     args = ap.parse_args()
 
@@ -312,11 +354,14 @@ def main():
     print("编码器:", enc)
     cargs = ["-c:v", enc, "-b:v", "5M"] if enc == "h264_mf" else ["-c:v", "mpeg4", "-q:v", "3"]
     n_frames = int(total * FPS)
+    if args.out_suffix:
+        root, ext = os.path.splitext(args.out)
+        args.out = root + args.out_suffix + ext
     outf = os.path.abspath(args.out)
     os.makedirs(os.path.dirname(outf), exist_ok=True)
     cmd = [FFMPEG, "-y", "-hide_banner", "-loglevel", "error",
            "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-           "-i", wav_tmp] + cargs + ["-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-shortest", outf]
+           "-i", wav_tmp] + cargs + ["-pix_fmt", "yuv420p", "-vf", "scale=1920:1080:flags=lanczos", "-c:a", "aac", "-b:a", "128k", "-shortest", outf]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     f_sub = font(30)
     f_bar = font(20)
@@ -333,14 +378,15 @@ def main():
         local = t - acc
         img = segs[k](local, seg_dur[k])
         d2 = ImageDraw.Draw(img)
-        sub = subs[k]
-        tw = d2.textlength(sub, font=f_sub)
-        if tw > W - 80:                       # 防溢出：太长就缩字号
-            f_sub = font(max(20, int(30 * (W - 80) / tw)))
+        if not args.no_subs:
+            sub = subs[k]
             tw = d2.textlength(sub, font=f_sub)
-        d2.rectangle([(W - tw) / 2 - 16, H - 92, (W + tw) / 2 + 16, H - 26], fill=(8, 12, 20))
-        d2.text((W / 2, H - 59), sub, font=f_sub, fill=FG, anchor="mm")
-        d2.rectangle([0, H - 6, int(W * i / max(1, n_frames - 1)), H], fill=ACCENT)
+            if tw > W - 80:
+                f_sub = font(max(20, int(30 * (W - 80) / tw)))
+                tw = d2.textlength(sub, font=f_sub)
+            d2.rectangle([(W - tw) / 2 - 16, H - 92, (W + tw) / 2 + 16, H - 26], fill=(8, 12, 20))
+            d2.text((W / 2, H - 59), sub, font=f_sub, fill=FG, anchor="mm")
+            d2.rectangle([0, H - 6, int(W * i / max(1, n_frames - 1)), H], fill=ACCENT)
         d2.text((W - 14, 12), "大肥鱼代劳", font=f_bar, fill=(90, 100, 120), anchor="ra")
         proc.stdin.write(img.tobytes())
     proc.stdin.close()
