@@ -341,3 +341,40 @@ body `{"text":"...","text_lang":"zh"}` → 返回 `audio/wav`（最小 JSON 即�
 **学习空间的约定**（写在该仓库 README 里）：文献只存"我们写的东西 + 链接"，不放别人的 PDF；
 错题不只记答案，要记"当时为什么想错"；大肥鱼犯的错也留档。
 
+
+## 二·六、2026-10-18 晚场：把导图搬进 VR（Unity 真正跑起来）
+
+**Unity 环境**：Hub 里只有 6000.6.6f1（项目是 6000.0.85f1），**没有直接升级**；
+从官方 API 查到安装包地址 → 国内镜像 404 → **走代理下载 3.75 GB 安装包**（签名 Valid）
+→ 静默安装到 `C:\Program Files\Unity\Hub\Editor\6000.0.85f1`（7.27 GB）。
+
+**跑通了三件**：
+
+| 事 | 命令 / 代码 | 验证 |
+| --- | --- | --- |
+| 场景生成 | `Unity.exe -batchmode -quit -projectPath unity -executeMethod BuildScene.Generate` | `[BuildScene] 场景已生成` |
+| 场景验证 | `... -executeMethod BuildScene.Verify` | `Verify OK` · objects=264 meshes=230 |
+| 导览板贴图 | `tools/make-vr-poster.py` → `Assets/Resources/Art/ProjectMap.png`（2048×1280） | TextureImporter 已导入 |
+
+**VR 导览板（Exhibit_ProjectMap）**：2.8m × 1.75m 竖板 + 蓝框 + 两条腿 + 感知框，
+摆在传送落点左前方。**UV 踩坑**：`PanelXY` 的平面 UV 是"自下而上 + 我们从背面看"，
+第一版字是 180° 倒的 —— 最终解法是**翻 U**（`uvs[i] = (1-u, v)`）。
+
+**新的坐标布局（都是 me 定的，写进代码）**：
+- 出生点：`(0, 6, -40)` —— 从莫比乌斯带 (9,7.7,46) 搬过来，一进世界就在数学区
+- AI 站台 `AI_Station`：`(6.5, 0.46, -40)` —— 圆盘 + 两圈发光环 + 四根灯柱
+- 两只吉祥物：**默认在站台待机**（不跟脚），按 **M** 召回/送回（`MascotFollow.GoHome`）
+- `Exhibit_Surface`：`(29.03, 0, -45.23)`
+
+**HUD 重做（SpeedHud / CompanionControl / MascotDialogue）**：字号从写死的 14/17/19/22
+改成**按 `Screen.height/1080` 缩放**（13/11/14/16），加半透明底板，调试行收进 **F1**。
+教训：`OnGUI` 用绝对像素字号，在 2560 宽的屏上会糊成一大片。
+
+**新工具**：`MeshMath.Disc(radius,segments)` · `MeshMath.Box(sx,sy,sz)`（引擎无关，不碰 Mathf）。
+注意：`MeshMath` 是**纯数学层**（没有 using UnityEngine），别在里面用 `Vector3` / `Mathf`。
+
+**踩坑**：Unity 编辑器开着时 `-batchmode` 会报 "another Unity instance is running" ——
+跑批处理前先 CloseMainWindow（或让 foilo 手动关）。
+
+**下一步**：① 主菜单 UI（把召唤/收回 AI、传送、展品切换挂上去）② VR 里能读导览板（走近按 E 讲解）
+③ 把 `M` 键加进 HUD 提示行
