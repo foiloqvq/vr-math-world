@@ -1,0 +1,5 @@
+# dsh-laptop-hands 的 bundle 层：只插一行客户端插件。
+- insert:
+    - id: laptop-hands
+      name: dsh-laptop-hands
+      config: {}

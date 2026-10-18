@@ -58,6 +58,47 @@ const server = createServer((req, res) => {
   cors(res)
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return }
 
+  // ===== 给插件用的状态快照 + 最新截图 =====
+  if (req.method === 'GET' && req.url === '/agent/state') {
+    const q = readQueue()
+    const dir = path.join('C:\\Users\\nb666\\Videos\\大肥鱼作品\\剪辑', 'laptop-shots')
+    let shot = null
+    try {
+      const files = readdirSync(dir).filter((f) => /\.png$/i.test(f))
+      if (files.length) {
+        files.sort((a, b) => statSync(path.join(dir, b)).mtimeMs - statSync(path.join(dir, a)).mtimeMs)
+        const f = files[0]
+        shot = { name: f, at: statSync(path.join(dir, f)).mtimeMs, bytes: statSync(path.join(dir, f)).size }
+      }
+    } catch (e) {}
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({
+      ok: true,
+      pending: q.pending.length,
+      running: q.running.length,
+      last: (q.done || []).slice(-3),
+      shot,
+      now: Date.now(),
+    }))
+    return
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/agent/latest-shot')) {
+    const dir = path.join('C:\\Users\\nb666\\Videos\\大肥鱼作品\\剪辑', 'laptop-shots')
+    try {
+      const files = readdirSync(dir).filter((f) => /\.png$/i.test(f))
+      files.sort((a, b) => statSync(path.join(dir, b)).mtimeMs - statSync(path.join(dir, a)).mtimeMs)
+      const f = files[0]
+      if (!f) { res.writeHead(404); res.end('no shot'); return }
+      const full = path.join(dir, f)
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-store', 'Content-Length': statSync(full).size })
+      createReadStream(full).pipe(res)
+      return
+    } catch (e) {
+      res.writeHead(404); res.end('no shot'); return
+    }
+  }
+
   // ===== 给局域网 worker 下载脚本/文件用（只读，白名单目录）=====
   if (req.method === 'GET' && req.url.startsWith('/lan/')) {
     const name = decodeURIComponent(req.url.slice(5)).replace(/[^\w.\-\u4e00-\u9fa5]/g, '')
@@ -69,6 +110,28 @@ const server = createServer((req, res) => {
     }
     res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': statSync(file).size })
     createReadStream(file).pipe(res)
+    return
+  }
+
+  // ===== 局域网 worker 上传截图/文件（笔记本的桌面截图走这里）=====
+  if (req.method === 'POST' && req.url.startsWith('/agent/upload')) {
+    const u = new URL(req.url, 'http://x')
+    const name = (u.searchParams.get('name') || 'upload.bin').replace(/[^\w.\-]/g, '')
+    const dir = 'C:\\Users\\nb666\\Videos\\大肥鱼作品\\剪辑\\laptop-shots'
+    try { mkdirSync(dir, { recursive: true }) } catch (e) {}
+    const out = path.join(dir, name)
+    const chunks = []
+    req.on('data', (c) => chunks.push(c))
+    req.on('end', () => {
+      try {
+        writeFileSync(out, Buffer.concat(chunks))
+        appendFileSync(DIAG_LOG, new Date().toISOString() + ' upload ' + name + ' ' + Buffer.concat(chunks).length + ' bytes\n')
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok: true, path: out, size: Buffer.concat(chunks).length }))
+      } catch (e) {
+        res.writeHead(500); res.end('{"ok":false}')
+      }
+    })
     return
   }
 

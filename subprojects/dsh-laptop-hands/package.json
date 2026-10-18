@@ -1,0 +1,32 @@
+{
+  "name": "dsh-laptop-hands",
+  "version": "0.1.0",
+  "private": true,
+  "description": "大肥鱼的手和眼：笔记本遥控面板（看屏幕/点击/打字），数据来自本机 7891 局域网 worker",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "client.js",
+    "lib/index.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}
