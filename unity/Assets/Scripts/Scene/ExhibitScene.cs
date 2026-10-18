@@ -616,11 +616,12 @@ public class ExhibitScene : MonoBehaviour
     {
         var surface = new GameObject("Exhibit_Surface");
         surface.transform.SetParent(transform, false);
-        surface.transform.localPosition = new Vector3(0f, 0f, -20f);
+        // 2026-10-18 foilo 定的位置：挪到数学区右前方（原来在 (0,0,-20)）
+        surface.transform.localPosition = new Vector3(29.03f, 0f, -45.23f);
         surface.AddComponent<ParametricSurface>().Rebuild();
         surface.GetComponent<MeshRenderer>().sharedMaterial =
             MaterialKit.MakeMaterial(new Color(0.29f, 0.64f, 1f), 0.35f, 0.15f);
-        BuildZone("Exhibit_Surface", new Vector3(0f, 5f, -20f), new Vector3(13f, 5f, 13f));
+        BuildZone("Exhibit_Surface", new Vector3(29.03f, 5f, -45.23f), new Vector3(13f, 5f, 13f));
     }
 
     void BuildDisplayMobius()
