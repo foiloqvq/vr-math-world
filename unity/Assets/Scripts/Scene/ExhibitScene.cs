@@ -272,6 +272,7 @@ public class ExhibitScene : MonoBehaviour
         BuildFractionsFloor();
         BuildSlopesExhibit();
         BuildProjectMapBoard();
+        BuildMethodWall();
         BuildMascotStation();
     }
 
@@ -370,6 +371,60 @@ public class ExhibitScene : MonoBehaviour
         MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.45f, 0f), new Vector3(0.08f, 0.9f, 0.08f));
 
         BuildZone("Exhibit_ProjectMap", new Vector3(-6.2f, 1.5f, -44.5f), new Vector3(3.6f, 2.6f, 3.6f));
+    }
+
+    // =====================================================================
+    // 方法墙：换元 + 双分类（一图流，来自真错题整理）
+    // 贴图由 study-space/tools/make-math-diagram.py 生成 → Resources/Art/MethodWall.png
+    // 目的：让刚进来的人站在墙前就能看懂「复合函数怎么拆」
+    // =====================================================================
+
+    public const float MethodWallWidth = 2.35f;
+    public const float MethodWallHeight = 1.575f;
+    public const float MethodWallGlow = 0.42f;
+
+    void BuildMethodWall()
+    {
+        var tex = Resources.Load<Texture2D>("Art/MethodWall");
+        if (tex == null)
+        {
+            Debug.LogWarning("[ExhibitScene] 缺少 Resources/Art/MethodWall.png —— 方法墙跳过（先跑 study-space/tools/make-math-diagram.py）");
+            return;
+        }
+
+        var root = new GameObject("Exhibit_MethodWall");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(2.6f, 1.55f, -45.4f);
+        root.transform.localRotation = Quaternion.Euler(0f, 22f, 0f);
+
+        var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
+        MaterialKit.SetMainTexture(mat, tex, 1f);
+        MaterialKit.SetEmissionTexture(mat, tex, MethodWallGlow);
+
+        var panel = MeshUtil.Spawn("MethodWallPanel", MeshMath.PanelXY(1f, 8), mat, root.transform);
+        MeshUtil.SetPlanarUVs(panel.GetComponent<MeshFilter>().sharedMesh, 0, 1);
+        // 和导览板同样的问题：从背面看，把 U 翻过来字才正（V 翻会更糟）
+        {
+            Mesh pm = panel.GetComponent<MeshFilter>().sharedMesh;
+            Vector2[] uvs = pm.uv;
+            for (int i = 0; i < uvs.Length; i++) uvs[i] = new Vector2(1f - uvs[i].x, uvs[i].y);
+            pm.uv = uvs;
+        }
+        panel.transform.localScale = new Vector3(MethodWallWidth, MethodWallHeight, 1f);
+
+        var frameMat = MaterialKit.MakeMaterial(new Color(0.55f, 0.42f, 0.85f), 0.45f, 0.2f);
+        float hw = MethodWallWidth * 0.5f;
+        float hh = MethodWallHeight * 0.5f;
+        float bar = 0.09f;
+        MakeBar(root.transform, frameMat, new Vector3(0f, hh, 0f), new Vector3(MethodWallWidth + bar * 2f, bar, bar));
+        MakeBar(root.transform, frameMat, new Vector3(0f, -hh, 0f), new Vector3(MethodWallWidth + bar * 2f, bar, bar));
+        MakeBar(root.transform, frameMat, new Vector3(-hw, 0f, 0f), new Vector3(bar, MethodWallHeight, bar));
+        MakeBar(root.transform, frameMat, new Vector3(hw, 0f, 0f), new Vector3(bar, MethodWallHeight, bar));
+
+        MakeBar(root.transform, frameMat, new Vector3(-hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
+        MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
+
+        BuildZone("Exhibit_MethodWall", new Vector3(2.6f, 1.45f, -45.4f), new Vector3(3.2f, 2.4f, 3.2f));
     }
 
     // =====================================================================
