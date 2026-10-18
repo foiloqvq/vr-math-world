@@ -9,6 +9,7 @@ public class CompanionControl : MonoBehaviour
     [Header("按键")]
     public KeyCode talkKey = KeyCode.E;
     public KeyCode stopKey = KeyCode.R;
+    public KeyCode homeKey = KeyCode.M;      // 召回 / 送回 AI 站台
 
     [Header("距离")]
     public float promptRange = 4.5f;      // 能和同伴说话的最近距离
@@ -57,6 +58,7 @@ public class CompanionControl : MonoBehaviour
             Rescan();
 
         // R：切换状态
+        if (Input.GetKeyDown(homeKey)) ToggleMascotStation();
         if (Input.GetKeyDown(stopKey))
         {
             lastKey = "R"; lastKeyUntil = Time.time + 3f; stopCount++;
@@ -168,4 +170,31 @@ public class CompanionControl : MonoBehaviour
             default: return exhibit;
         }
     }
+
+    /// M 键：任意跟班在跟着 -> 全部回站台；否则 -> 全部召回跟着。
+    void ToggleMascotStation()
+    {
+        var all = Object.FindObjectsByType<MascotFollow>(FindObjectsSortMode.None);
+        if (all == null || all.Length == 0) return;
+
+        bool anyFollowing = false;
+        foreach (var m in all) if (m != null && m.mode == MascotFollow.Mode.Follow) anyFollowing = true;
+
+        for (int i = 0; i < all.Length; i++)
+        {
+            var m = all[i];
+            if (m == null) continue;
+            if (anyFollowing)
+            {
+                float off = (i - (all.Length - 1) * 0.5f) * 1.7f;
+                m.GoHome(MascotFollow.StationPoint + new Vector3(off, 0f, 0f));
+            }
+            else
+            {
+                m.ResumeFollow();
+            }
+        }
+        Debug.Log("[CompanionControl] 跟班 -> " + (anyFollowing ? "回站台" : "召回跟随") + "（" + all.Length + " 只）");
+    }
+
 }

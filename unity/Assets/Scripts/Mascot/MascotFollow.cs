@@ -35,6 +35,13 @@ public class MascotFollow : MonoBehaviour
     /// 说话时看向的目标（由对话系统临时设置）
     public Transform lookAtOverride;
 
+    /// AI 待机区（站台）中心。ExhibitScene 建模时写入；按 M 时所有跟班飞回这里。
+    public static Vector3 StationPoint = new Vector3(18f, 1.5f, -40f);
+
+    /// 各自的分站位（避免两只叠在一起）
+    public Vector3 homeStation;
+    public bool hasHome;
+
     float bobPhase;
     Vector3 lastPos;
     float lastSpeed;
@@ -45,6 +52,21 @@ public class MascotFollow : MonoBehaviour
     public string ModeName
     {
         get { return mode == Mode.Follow ? "跟随中" : (mode == Mode.Wander ? "自由漫游" : "已停下"); }
+    }
+
+    /// 回站台待机（不进 Follow，也不乱跑）
+    public void GoHome(Vector3 station)
+    {
+        homeStation = station;
+        hasHome = true;
+        mode = Mode.Stay;
+    }
+
+    /// 重新跟着玩家
+    public void ResumeFollow()
+    {
+        hasHome = false;
+        mode = Mode.Follow;
     }
 
     public void CycleMode() { mode = (Mode)(((int)mode + 1) % 3); if (mode == Mode.Wander) hasWanderTarget = false; }
@@ -122,7 +144,14 @@ public class MascotFollow : MonoBehaviour
                 }
             }
         }
-        // Stay：什么都不做，只保留呼吸与摆动
+        else if (mode == Mode.Stay && hasHome)
+        {
+            // 回自己的站位，站定后只剩呼吸
+            Vector3 dockPos = homeStation + Vector3.up * (Mathf.Sin(bobPhase) * bobAmplitude * 0.5f);
+            float k = 1f - Mathf.Exp(-1.6f * Mathf.Max(dt, 1e-4f));
+            transform.position = Vector3.Lerp(transform.position, dockPos, k);
+        }
+        // Stay（没有站位）：什么都不做，只保留呼吸与摆动
 
         // ---- 朝向：说话时看讲解目标，否则看移动方向/目标 ----
         Vector3 face, dir;

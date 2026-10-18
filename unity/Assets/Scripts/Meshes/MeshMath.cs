@@ -1,4 +1,4 @@
-// 纯 C# 网格数学：不引用 UnityEngine，因此可以在引擎外直接用 dotnet 编译测试。
+﻿// 纯 C# 网格数学：不引用 UnityEngine，因此可以在引擎外直接用 dotnet 编译测试。
 // （见 tools/meshmath-test —— 装 Unity 之前就能验证几何算得对不对）
 using System;
 
@@ -256,5 +256,51 @@ namespace Vmw.Meshes
             foreach (int idx in m.Triangles) if (idx < 0 || idx >= n) return false;
             return true;
         }
+    /// 水平圆盘（朝上，Y 法线）：AI 站台底盘用。
+    public static MeshData Disc(float radius, int segments)
+    {
+        var v = new System.Collections.Generic.List<float>();
+        var t = new System.Collections.Generic.List<int>();
+        var uv = new System.Collections.Generic.List<float>();
+        const double TAU = System.Math.PI * 2.0;
+        v.Add(0f); v.Add(0f); v.Add(0f);
+        uv.Add(0.5f); uv.Add(0.5f);
+        for (int i = 0; i <= segments; i++)
+        {
+            double a = (i / (double)segments) * TAU;
+            float ca = (float)System.Math.Cos(a);
+            float sa = (float)System.Math.Sin(a);
+            v.Add(ca * radius); v.Add(0f); v.Add(sa * radius);
+            uv.Add(0.5f + 0.5f * ca); uv.Add(0.5f + 0.5f * sa);
+        }
+        for (int i = 0; i < segments; i++)
+        {
+            int a = 0, b = i + 1, c = i + 2;
+            t.Add(a); t.Add(c); t.Add(b);
+        }
+        return new MeshData(v.ToArray(), t.ToArray(), uv.ToArray());
     }
+
+    /// 长方体（中心在原点，边长 sx/sy/sz）。
+    public static MeshData Box(float sx, float sy, float sz)
+    {
+        float x = sx * 0.5f, y = sy * 0.5f, z = sz * 0.5f;
+        var v = new float[]
+        {
+            -x,-y,-z,  x,-y,-z,  x, y,-z, -x, y,-z,
+            -x,-y, z,  x,-y, z,  x, y, z, -x, y, z,
+        };
+        var t = new int[]
+        {
+            0,2,1, 0,3,2,
+            4,5,6, 4,6,7,
+            0,1,5, 0,5,4,
+            3,7,6, 3,6,2,
+            0,4,7, 0,7,3,
+            1,2,6, 1,6,5,
+        };
+        return new MeshData(v, t);
+    }
+}
+
 }

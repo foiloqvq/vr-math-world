@@ -272,8 +272,51 @@ public class ExhibitScene : MonoBehaviour
         BuildFractionsFloor();
         BuildSlopesExhibit();
         BuildProjectMapBoard();
+        BuildMascotStation();
     }
 
+
+
+    // =====================================================================
+    // AI 站台：两个跟班的待机区（按 M 召回/送回；以后接主菜单 UI 也走这里）
+    // =====================================================================
+
+    public static readonly Vector3 StationCenter = new Vector3(18f, 0.46f, -40f);
+    public const float StationRadius = 2.6f;
+
+    void BuildMascotStation()
+    {
+        var root = new GameObject("AI_Station");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = StationCenter;
+
+        // 底盘：一块圆台（走不上去，纯装饰）；顺便把"AI 在这里待机"这件事说清楚
+        var baseMat = MaterialKit.MakeMaterial(new Color(0.16f, 0.22f, 0.34f), 0.55f, 0.05f);
+        var floor = MeshUtil.Spawn("StationBase", MeshMath.Disc(StationRadius, 64), baseMat, root.transform);
+        MeshUtil.SetPlanarUVs(floor.GetComponent<MeshFilter>().sharedMesh, 0, 1);
+
+        // 两圈发光环：待机时像"充电座"
+        var ringMat = MaterialKit.MakeMaterial(new Color(0.45f, 0.85f, 1f), 0.2f, 0.9f);
+        var ring1 = MeshUtil.Spawn("StationRingOuter", MeshMath.Torus(StationRadius * 0.92f, 0.06f, 72, 10), ringMat, root.transform);
+        ring1.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+        var ring2 = MeshUtil.Spawn("StationRingCenter", MeshMath.Torus(0.55f, 0.045f, 48, 8), ringMat, root.transform);
+        ring2.transform.localPosition = new Vector3(0f, 0.06f, 0f);
+
+        // 四根小灯柱
+        var postMat = MaterialKit.MakeMaterial(new Color(0.30f, 0.55f, 0.85f), 0.3f, 0.5f);
+        for (int i = 0; i < 4; i++)
+        {
+            float a = (i / 4f) * Mathf.PI * 2f + Mathf.PI * 0.25f;
+            var post = MeshUtil.Spawn("StationPost_" + i, MeshMath.Box(0.10f, 0.9f, 0.10f),
+                postMat, root.transform);
+            post.transform.localPosition = new Vector3(Mathf.Cos(a) * StationRadius * 0.98f, 0.45f, Mathf.Sin(a) * StationRadius * 0.98f);
+        }
+
+        // 告诉所有跟班：站台在这儿
+        MascotFollow.StationPoint = StationCenter + Vector3.up * 1.15f;
+
+        BuildZone("AI_Station", StationCenter + Vector3.up * 1f, new Vector3(StationRadius * 2.4f, 2.6f, StationRadius * 2.4f));
+    }
 
     // =====================================================================
     // 导览板：项目地图（贴图由 tools/make-vr-poster.py 生成到 Resources/Art/ProjectMap.png）
