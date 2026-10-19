@@ -275,15 +275,16 @@ public class ExhibitScene : MonoBehaviour
         BuildMethodWall();
         BuildBridgeWall();
         BuildIntervalBands();
+        BuildSpawnPlaza();
         // 3D 版（Venn 圆环 / 子集台阶）已弃用：改成图示墙，更好懂。方法保留以便回退。
         // BuildVennZone(); BuildSubsetSteps();
         // 第 1 章图示墙：直接用一图流，比 3D 台子好懂
         BuildDiagramWall("Exhibit_C01_VennWall", "C01_Venn",
-            new Vector3(20.0f, 2.40f, -45.5f), 5.0f, 3.35f, new Color(0.30f, 0.80f, 0.90f), 0.45f);
+            new Vector3(20.5f, 1.95f, -45.5f), 4.0f, 2.68f, new Color(0.30f, 0.80f, 0.90f), 0.45f);
         BuildDiagramWall("Exhibit_C01_SubsetWall", "C01_Subsets",
-            new Vector3(-20.0f, 2.40f, -45.5f), 5.0f, 3.35f, new Color(0.70f, 0.62f, 1.00f), 0.45f);
+            new Vector3(-12.3f, 1.95f, -45.5f), 4.0f, 2.68f, new Color(0.70f, 0.62f, 1.00f), 0.45f);
         BuildDiagramWall("Exhibit_C01_PitfallWall", "C01_Pitfalls",
-            new Vector3(-30.0f, 2.40f, -45.5f), 5.0f, 3.35f, new Color(1.00f, 0.62f, 0.78f), 0.45f);
+            new Vector3(-20.5f, 1.95f, -45.5f), 4.0f, 2.68f, new Color(1.00f, 0.62f, 0.78f), 0.45f);
         BuildMascotStation();
     }
 
@@ -335,8 +336,8 @@ public class ExhibitScene : MonoBehaviour
     // 摆在传送落点前方左侧 —— 一进数学区就能看见"这是个什么样的项目"。
     // =====================================================================
 
-    public const float ProjectMapWidth = 5.2f;
-    public const float ProjectMapHeight = 3.25f;
+    public const float ProjectMapWidth = 4.2f;
+    public const float ProjectMapHeight = 2.62f;
     public const float ProjectMapGlow = 0.55f;
 
     void BuildProjectMapBoard()
@@ -350,7 +351,7 @@ public class ExhibitScene : MonoBehaviour
 
         var root = new GameObject("Exhibit_ProjectMap");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(-10.0f, 2.35f, -45.5f);
+        root.transform.localPosition = new Vector3(-4.1f, 1.90f, -45.5f);
         root.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);   // 摆正：面向出生点
 
         var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
@@ -390,8 +391,8 @@ public class ExhibitScene : MonoBehaviour
     // 目的：让刚进来的人站在墙前就能看懂「复合函数怎么拆」
     // =====================================================================
 
-    public const float MethodWallWidth = 5.0f;
-    public const float MethodWallHeight = 3.35f;
+    public const float MethodWallWidth = 4.0f;
+    public const float MethodWallHeight = 2.68f;
     public const float MethodWallGlow = 0.42f;
 
     void BuildMethodWall()
@@ -405,7 +406,7 @@ public class ExhibitScene : MonoBehaviour
 
         var root = new GameObject("Exhibit_MethodWall");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(10.0f, 2.40f, -45.5f);
+        root.transform.localPosition = new Vector3(12.3f, 1.95f, -45.5f);
         root.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);   // 摆正：面向出生点
 
         var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
@@ -444,8 +445,8 @@ public class ExhibitScene : MonoBehaviour
     //   2) 地面色带：区间开闭的"走一遍" —— 高度差 = 含不含端点
     // =====================================================================
 
-    public const float BridgeWallWidth = 5.0f;
-    public const float BridgeWallHeight = 3.35f;
+    public const float BridgeWallWidth = 4.0f;
+    public const float BridgeWallHeight = 2.68f;
     public const float BridgeWallGlow = 0.40f;
 
     void BuildBridgeWall()
@@ -459,7 +460,7 @@ public class ExhibitScene : MonoBehaviour
 
         var root = new GameObject("Exhibit_C00_Bridge");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(0.0f, 2.40f, -45.5f);
+        root.transform.localPosition = new Vector3(4.1f, 1.95f, -45.5f);
         root.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);   // 摆正：面向出生点
 
         var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
@@ -555,6 +556,74 @@ public class ExhibitScene : MonoBehaviour
 
             MakeBar(band.transform, m, new Vector3(i * step, h * 0.5f, 0f), new Vector3(0.70f, h, 0.62f));
         }
+    }
+
+    // =====================================================================
+    // 出生点广场：大圆盘地砖 + 发光外环 + 8 条放射纹 + 中心徽记 + 四角灯柱
+    // 玩家出生在 (0, 6, -40)，正好落在这块广场中心上方
+    // =====================================================================
+
+    public const float PlazaRadius = 6.0f;
+    public const float PlazaX = 0f;
+    public const float PlazaZ = -40f;
+
+    void BuildSpawnPlaza()
+    {
+        var root = new GameObject("Spawn_Plaza");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(PlazaX, 0f, PlazaZ);
+
+        // 底盘：略高于地面的圆盘
+        var baseMat = MaterialKit.MakeMaterial(new Color(0.10f, 0.15f, 0.26f), 0.25f, 0.06f);
+        MeshUtil.Spawn("Plaza_Base", MeshMath.Disc(PlazaRadius, 96), baseMat, root.transform)
+            .transform.localPosition = new Vector3(0f, 0.04f, 0f);
+
+        // 内圈（浅一层，形成两级台阶感）
+        var innerMat = MaterialKit.MakeMaterial(new Color(0.13f, 0.20f, 0.33f), 0.30f, 0.10f);
+        MeshUtil.Spawn("Plaza_Inner", MeshMath.Disc(PlazaRadius * 0.62f, 80), innerMat, root.transform)
+            .transform.localPosition = new Vector3(0f, 0.09f, 0f);
+
+        // 发光外环 + 内环
+        var ringMat = MaterialKit.MakeMaterial(new Color(0.40f, 0.90f, 1.00f), 0.20f, 0.95f);
+        MeshUtil.Spawn("Plaza_RingOuter", MeshMath.Torus(PlazaRadius * 0.96f, 0.07f, 96, 12), ringMat, root.transform)
+            .transform.localPosition = new Vector3(0f, 0.10f, 0f);
+        MeshUtil.Spawn("Plaza_RingInner", MeshMath.Torus(PlazaRadius * 0.62f, 0.05f, 80, 10), ringMat, root.transform)
+            .transform.localPosition = new Vector3(0f, 0.13f, 0f);
+
+        // 8 条放射纹（把圆盘分成 8 块地砖）
+        var tileMat = MaterialKit.MakeMaterial(new Color(0.22f, 0.42f, 0.62f), 0.30f, 0.35f);
+        for (int i = 0; i < 8; i++)
+        {
+            float ang = i * 45f;
+            var bar = MeshUtil.Spawn("Plaza_Spoke_" + i, MeshMath.Box(0.10f, 0.04f, PlazaRadius * 0.92f), tileMat, root.transform);
+            bar.transform.localPosition = new Vector3(0f, 0.13f, 0f);
+            bar.transform.localRotation = Quaternion.Euler(0f, ang, 0f);
+            // Box 以中心为原点：把它推到半径一半处
+            Vector3 dir = Quaternion.Euler(0f, ang, 0f) * Vector3.forward;
+            bar.transform.localPosition = dir * (PlazaRadius * 0.46f) + new Vector3(0f, 0.13f, 0f);
+        }
+
+        // 中心徽记：小圆 + 竖柱
+        var coreMat = MaterialKit.MakeMaterial(new Color(1.00f, 0.85f, 0.45f), 0.30f, 0.90f);
+        MeshUtil.Spawn("Plaza_Core", MeshMath.Disc(0.55f, 48), coreMat, root.transform)
+            .transform.localPosition = new Vector3(0f, 0.15f, 0f);
+        MeshUtil.Spawn("Plaza_CorePillar", MeshMath.Box(0.16f, 1.4f, 0.16f), coreMat, root.transform)
+            .transform.localPosition = new Vector3(0f, 0.85f, 0f);
+
+        // 四角灯柱（在外环之外）
+        var postMat = MaterialKit.MakeMaterial(new Color(0.35f, 0.55f, 0.85f), 0.35f, 0.55f);
+        for (int i = 0; i < 4; i++)
+        {
+            float ang = 45f + i * 90f;
+            Vector3 dir = Quaternion.Euler(0f, ang, 0f) * Vector3.forward;
+            Vector3 pos = dir * (PlazaRadius + 0.9f);
+            MeshUtil.Spawn("Plaza_Post_" + i, MeshMath.Box(0.14f, 2.2f, 0.14f), postMat, root.transform)
+                .transform.localPosition = new Vector3(pos.x, 1.1f, pos.z);
+            MeshUtil.Spawn("Plaza_Lamp_" + i, MeshMath.Box(0.30f, 0.30f, 0.30f), ringMat, root.transform)
+                .transform.localPosition = new Vector3(pos.x, 2.3f, pos.z);
+        }
+
+        BuildZone("Spawn_Plaza", new Vector3(PlazaX, 0.4f, PlazaZ), new Vector3(PlazaRadius * 2f + 1.4f, 1.4f, PlazaRadius * 2f + 1.4f));
     }
 
     // =====================================================================
