@@ -13,6 +13,8 @@ import { createServer } from 'node:http'
 import { appendFileSync, createWriteStream, createReadStream, writeFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 
+const ROOT = 'C:/Users/nb666/Documents/deepseek-harness/default-workspace'
+
 const PORT = 7891
 const DEST = 'C:\\Users\\nb666\\Videos\\大肥鱼作品\\剪辑'
 const LAN_DIR = 'C:\\Users\\nb666\\Documents\\deepseek-harness\\default-workspace\\study-space\\tools\\lan'
@@ -57,6 +59,32 @@ const cors = (res) => {
 const server = createServer((req, res) => {
   cors(res)
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return }
+
+  // ===== 本地替身：POST /twin/ask { "q": "问题" } → { "answer": "..." } =====
+  if (req.method === 'POST' && req.url.startsWith('/twin/ask')) {
+    let body = ''
+    req.on('data', (c) => { body += c; if (body.length > 65536) req.destroy() })
+    req.on('end', async () => {
+      try {
+        const q = (JSON.parse(body || '{}').q || '').toString().slice(0, 500)
+        if (!q) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'empty q' })); return }
+        const askPath = path.join(ROOT, 'study-space', 'tools', 'local-twin', 'ask.py')
+        const { execFile } = await import('node:child_process')
+        const py = 'C:/Users/nb666/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe'
+        execFile(py, [askPath, q], { timeout: 120000, maxBuffer: 1024 * 1024, env: { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', TWIN_MODEL: process.env.TWIN_MODEL || 'twin-qwen' } },
+          (err, stdout) => {
+            if (err) { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err.message || err) })); return }
+            const lines = String(stdout || '').trim().split('\n')
+            const answer = lines[lines.length - 1] || ''
+            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+            res.end(JSON.stringify({ answer, raw: String(stdout || '').slice(-2000) }))
+          })
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(e) }))
+      }
+    })
+    return
+  }
 
   // ===== 笔记本手眼面板（同源，浏览器打开 /panel）=====
   if (req.method === 'GET' && (req.url === '/panel' || req.url === '/panel/')) {
