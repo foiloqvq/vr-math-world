@@ -76,13 +76,13 @@ def draw_qr_strip(img, d, font_fn):
                fill=(150, 120, 120), anchor="ra")
         return
 
-    size = 150
-    gap = 24
-    pad = 14
+    size = 124
+    gap = 16
+    pad = 12
     n = len(QR_LINKS)
     total_w = n * size + (n - 1) * gap + pad * 2
-    x0 = 60
-    y0 = 902      # 左下空白区（根节点圆盘下方）
+    x0 = 48
+    y0 = 960      # 左下空白区；缩小 + 左移，避免压住左列文字
     d.rounded_rectangle([x0, y0, x0 + total_w, y0 + size + 62 + pad * 2],
                         radius=16, fill=(13, 19, 31), outline=(46, 64, 96), width=2)
     d.text((x0 + pad, y0 - 30), "手机扫码 · 进项目主页 / 联系我们", font=font_fn(26), fill=(120, 210, 220))
@@ -153,7 +153,7 @@ def main():
 
     draw_qr_strip(img, d, font)
     # QQ 群没有可扫的公开链接（扫码只能进"加群"页），所以直接写群号
-    d.text((60 + 14, 902 + 150 + 62), "QQ 群 222353054  ·  bilibili 搜「大肥鱼」", font=font(24, False),
+    d.text((48 + 12, 960 + 124 + 62 + 12 + 6), "QQ 群 222353054  ·  bilibili 搜「大肥鱼」", font=font(23, False),
            fill=(150, 170, 200))
 
     # 页脚
