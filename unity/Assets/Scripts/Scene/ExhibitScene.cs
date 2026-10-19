@@ -275,6 +275,8 @@ public class ExhibitScene : MonoBehaviour
         BuildMethodWall();
         BuildBridgeWall();
         BuildIntervalBands();
+        BuildVennZone();
+        BuildSubsetSteps();
         BuildMascotStation();
     }
 
@@ -546,6 +548,104 @@ public class ExhibitScene : MonoBehaviour
 
             MakeBar(band.transform, m, new Vector3(i * step, h * 0.5f, 0f), new Vector3(0.70f, h, 0.62f));
         }
+    }
+
+    // =====================================================================
+    // 第 1 章 P7：交并补 —— 双环 Venn 区（可走）
+    //   U = 底板（不发光深色）｜A/B = 两个发光圆环｜重叠处 = 一根小柱子
+    //   走进去：站环内 = 属于 A；站重叠区 = 同时属于 A 和 B（A∩B）
+    // =====================================================================
+
+    public const float VennCenterX = 8.6f;
+    public const float VennCenterZ = -42.4f;
+    public const float VennRingR = 1.75f;
+
+    void BuildVennZone()
+    {
+        var root = new GameObject("Exhibit_C01_Venn");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(VennCenterX, 0f, VennCenterZ);
+
+        // 全集底板：整块矩形 = U
+        var uniMat = MaterialKit.MakeMaterial(new Color(0.10f, 0.13f, 0.22f), 0.10f, 0.02f);
+        MeshUtil.Spawn("Venn_UniversalPlate", MeshMath.Box(6.6f, 0.06f, 4.6f), uniMat, root.transform)
+            .transform.localPosition = new Vector3(0f, 0.03f, 0f);
+
+        var matA = MaterialKit.MakeMaterial(new Color(0.35f, 0.95f, 1.00f), 0.25f, 0.85f);
+        var matB = MaterialKit.MakeMaterial(new Color(1.00f, 0.55f, 0.80f), 0.25f, 0.85f);
+
+        var ringA = MeshUtil.Spawn("Venn_RingA", MeshMath.Torus(VennRingR, 0.06f, 72, 10), matA, root.transform);
+        ringA.transform.localPosition = new Vector3(-0.95f, 0.09f, 0f);
+        var ringB = MeshUtil.Spawn("Venn_RingB", MeshMath.Torus(VennRingR, 0.06f, 72, 10), matB, root.transform);
+        ringB.transform.localPosition = new Vector3(0.95f, 0.09f, 0f);
+
+        // 重叠区标记：A∩B
+        var interMat = MaterialKit.MakeMaterial(new Color(1.00f, 0.90f, 0.40f), 0.30f, 0.95f);
+        var inter = MeshUtil.Spawn("Venn_Intersection", MeshMath.Box(0.55f, 0.36f, 0.55f), interMat, root.transform);
+        inter.transform.localPosition = new Vector3(0f, 0.18f, 0f);
+
+        // 四角小柱子 = U 的边界提示
+        var postMat = MaterialKit.MakeMaterial(new Color(0.30f, 0.45f, 0.65f), 0.30f, 0.15f);
+        for (int i = 0; i < 4; i++)
+        {
+            float sx = (i == 0 || i == 3) ? -3.2f : 3.2f;
+            float sz = (i < 2) ? -2.2f : 2.2f;
+            MeshUtil.Spawn("Venn_CornerPost_" + i, MeshMath.Box(0.10f, 0.9f, 0.10f), postMat, root.transform)
+                .transform.localPosition = new Vector3(sx, 0.45f, sz);
+        }
+
+        BuildZone("Exhibit_C01_Venn", new Vector3(VennCenterX, 0.6f, VennCenterZ), new Vector3(7.2f, 1.6f, 5.2f));
+    }
+
+    // =====================================================================
+    // 第 1 章 P6：子集 2ⁿ —— 四级台阶，每级 2ᵏ 个发光方块
+    //   走上一层，方块数量 1 → 3 → 3 → 1，最后一级顶部写总账 1+3+3+1=8=2³
+    // =====================================================================
+
+    public const float SubsetCenterX = -14.6f;
+    public const float SubsetCenterZ = -45.2f;
+    public const float SubsetStepH = 0.34f;
+
+    void BuildSubsetSteps()
+    {
+        var root = new GameObject("Exhibit_C01_Subsets");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(SubsetCenterX, 0f, SubsetCenterZ);
+
+        var stepMat = MaterialKit.MakeMaterial(new Color(0.16f, 0.20f, 0.30f), 0.20f, 0.05f);
+        var blockMat = MaterialKit.MakeMaterial(new Color(0.55f, 0.90f, 1.00f), 0.25f, 0.80f);
+
+        // counts[k] = 2 选 k：1,3,3,1
+        int[] counts = { 1, 3, 3, 1 };
+        const float stepDepth = 1.35f;
+        const float stepWidth = 5.4f;
+
+        for (int k = 0; k < 4; k++)
+        {
+            int n = counts[k];
+            float topY = SubsetStepH * (k + 1);
+            float z = -1.0f - k * stepDepth;
+
+            // 台阶本体
+            MeshUtil.Spawn("Subset_Step_" + k, MeshMath.Box(stepWidth, topY, stepDepth), stepMat, root.transform)
+                .transform.localPosition = new Vector3(0f, topY * 0.5f, z);
+
+            // 这一级的 n 个方块，沿 X 均匀排开
+            float span = 0.9f * (n - 1);
+            for (int i = 0; i < n; i++)
+            {
+                float x = -span * 0.5f + i * 0.9f;
+                var b = MeshUtil.Spawn("Subset_Block_k" + k + "_" + i, MeshMath.Box(0.42f, 0.42f, 0.42f), blockMat, root.transform);
+                b.transform.localPosition = new Vector3(x, topY + 0.21f, z);
+            }
+        }
+
+        // 顶部总账提示柱
+        var capMat = MaterialKit.MakeMaterial(new Color(1.00f, 0.88f, 0.45f), 0.30f, 0.90f);
+        MeshUtil.Spawn("Subset_SumCap", MeshMath.Box(0.30f, 0.9f, 0.30f), capMat, root.transform)
+            .transform.localPosition = new Vector3(0f, SubsetStepH * 4f + 0.45f, -1.0f - 4f * stepDepth + 0.3f);
+
+        BuildZone("Exhibit_C01_Subsets", new Vector3(SubsetCenterX, 1.0f, SubsetCenterZ - 3f), new Vector3(6.2f, 2.6f, 6.0f));
     }
 
     // =====================================================================
