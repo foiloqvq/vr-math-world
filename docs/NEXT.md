@@ -426,3 +426,13 @@ foilo 决定先补 **C# / Unity 基础**，VR 布局暂时冻结。**下次回�
 - 位置：`study-space/tools/local-twin/`（人格、规则、索引）+ `study-space/tools/bot-cycle.ps1`（值守编排）
 - 规则可自改：`local-twin/rules/`（人格 / 盲区词 / 安全短句），改完下一轮生效
 - 逻辑要人批：`proposals/` 待审
+
+### 2026-10-19 13:52 收工状态
+
+**小鱼苗（苗苗）已上线值班**：计划任务 `DaFeiyuBotCycle` 每 2 分钟看一次群 → 认 @ → 本地 7B 回答 → 发回群（20% 概率发图）。
+- 规则可自改：`study-space/tools/local-twin/rules/`（人格 / 盲区词 / 安全短句）
+- 逻辑要人批：`study-space/tools/local-twin/proposals/`
+- 日志：`study-space/journal/苗苗-值班日志-YYYY-MM-DD.md`
+- 关掉：`schtasks /end /tn DaFeiyuBotCycle`
+
+**VR 冻结中**，回来第一件事仍是生成 `BuildMathFloor()`（见上方「暂停点」）。
