@@ -560,6 +560,27 @@ public class ExhibitScene : MonoBehaviour
     public const float VennCenterZ = -42.4f;
     public const float VennRingR = 1.75f;
 
+    /// <summary>悬浮小标签牌：贴图 + U 翻转（和墙一样，字才是正的）</summary>
+    GameObject MakeLabelPanel(Transform parent, string texName, Vector3 pos, float w, float h, float glow)
+    {
+        var tex = Resources.Load<Texture2D>("Art/" + texName);
+        if (tex == null) { Debug.LogWarning("[ExhibitScene] 缺贴图 Art/" + texName); return null; }
+
+        var mat = MaterialKit.MakeMaterial(Color.white, 0.10f, 0f);
+        MaterialKit.SetMainTexture(mat, tex, 1f);
+        MaterialKit.SetEmissionTexture(mat, tex, glow);
+
+        var go = MeshUtil.Spawn("LabelPanel_" + texName, MeshMath.PanelXY(1f, 8), mat, parent);
+        MeshUtil.SetPlanarUVs(go.GetComponent<MeshFilter>().sharedMesh, 0, 1);
+        Mesh pm = go.GetComponent<MeshFilter>().sharedMesh;
+        Vector2[] uvs = pm.uv;
+        for (int i = 0; i < uvs.Length; i++) uvs[i] = new Vector2(1f - uvs[i].x, uvs[i].y);
+        pm.uv = uvs;
+        go.transform.localPosition = pos;
+        go.transform.localScale = new Vector3(w, h, 1f);
+        return go;
+    }
+
     void BuildVennZone()
     {
         var root = new GameObject("Exhibit_C01_Venn");
@@ -594,6 +615,8 @@ public class ExhibitScene : MonoBehaviour
                 .transform.localPosition = new Vector3(sx, 0.45f, sz);
         }
 
+        MakeLabelPanel(root.transform, "Label_Venn", new Vector3(0f, 2.35f, 0f), 2.0f, 1.16f, 0.55f);
+
         BuildZone("Exhibit_C01_Venn", new Vector3(VennCenterX, 0.6f, VennCenterZ), new Vector3(7.2f, 1.6f, 5.2f));
     }
 
@@ -613,7 +636,14 @@ public class ExhibitScene : MonoBehaviour
         root.transform.localPosition = new Vector3(SubsetCenterX, 0f, SubsetCenterZ);
 
         var stepMat = MaterialKit.MakeMaterial(new Color(0.16f, 0.20f, 0.30f), 0.20f, 0.05f);
-        var blockMat = MaterialKit.MakeMaterial(new Color(0.55f, 0.90f, 1.00f), 0.25f, 0.80f);
+        // 每层一种颜色，和标签牌上的说明一一对应
+        var tierMats = new Material[]
+        {
+            MaterialKit.MakeMaterial(new Color(0.35f, 0.95f, 1.00f), 0.25f, 0.80f), // 层1 青
+            MaterialKit.MakeMaterial(new Color(0.45f, 0.95f, 0.65f), 0.25f, 0.80f), // 层2 绿
+            MaterialKit.MakeMaterial(new Color(1.00f, 0.85f, 0.40f), 0.25f, 0.80f), // 层3 黄
+            MaterialKit.MakeMaterial(new Color(1.00f, 0.55f, 0.80f), 0.25f, 0.80f), // 层4 粉
+        };
 
         // counts[k] = 2 选 k：1,3,3,1
         int[] counts = { 1, 3, 3, 1 };
@@ -635,15 +665,13 @@ public class ExhibitScene : MonoBehaviour
             for (int i = 0; i < n; i++)
             {
                 float x = -span * 0.5f + i * 0.9f;
-                var b = MeshUtil.Spawn("Subset_Block_k" + k + "_" + i, MeshMath.Box(0.42f, 0.42f, 0.42f), blockMat, root.transform);
+                var b = MeshUtil.Spawn("Subset_Block_k" + k + "_" + i, MeshMath.Box(0.42f, 0.42f, 0.42f), tierMats[k], root.transform);
                 b.transform.localPosition = new Vector3(x, topY + 0.21f, z);
             }
         }
 
-        // 顶部总账提示柱
-        var capMat = MaterialKit.MakeMaterial(new Color(1.00f, 0.88f, 0.45f), 0.30f, 0.90f);
-        MeshUtil.Spawn("Subset_SumCap", MeshMath.Box(0.30f, 0.9f, 0.30f), capMat, root.transform)
-            .transform.localPosition = new Vector3(0f, SubsetStepH * 4f + 0.45f, -1.0f - 4f * stepDepth + 0.3f);
+        // 悬浮说明牌（代替原来的黄柱子）
+        MakeLabelPanel(root.transform, "Label_Subsets", new Vector3(0f, SubsetStepH * 4f + 1.5f, -1.0f - 1.6f * stepDepth), 2.4f, 1.39f, 0.55f);
 
         BuildZone("Exhibit_C01_Subsets", new Vector3(SubsetCenterX, 1.0f, SubsetCenterZ - 3f), new Vector3(6.2f, 2.6f, 6.0f));
     }
