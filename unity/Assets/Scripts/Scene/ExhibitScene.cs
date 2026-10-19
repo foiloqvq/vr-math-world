@@ -279,11 +279,11 @@ public class ExhibitScene : MonoBehaviour
         // BuildVennZone(); BuildSubsetSteps();
         // 第 1 章图示墙：直接用一图流，比 3D 台子好懂
         BuildDiagramWall("Exhibit_C01_VennWall", "C01_Venn",
-            new Vector3(11.0f, 1.60f, -45.5f), 3.0f, 2.0f, new Color(0.30f, 0.80f, 0.90f), 0.45f);
+            new Vector3(20.0f, 2.40f, -45.5f), 5.0f, 3.35f, new Color(0.30f, 0.80f, 0.90f), 0.45f);
         BuildDiagramWall("Exhibit_C01_SubsetWall", "C01_Subsets",
-            new Vector3(-14.6f, 1.60f, -45.5f), 3.0f, 2.0f, new Color(0.70f, 0.62f, 1.00f), 0.45f);
+            new Vector3(-20.0f, 2.40f, -45.5f), 5.0f, 3.35f, new Color(0.70f, 0.62f, 1.00f), 0.45f);
         BuildDiagramWall("Exhibit_C01_PitfallWall", "C01_Pitfalls",
-            new Vector3(-21.0f, 1.60f, -45.5f), 3.0f, 2.0f, new Color(1.00f, 0.62f, 0.78f), 0.45f);
+            new Vector3(-30.0f, 2.40f, -45.5f), 5.0f, 3.35f, new Color(1.00f, 0.62f, 0.78f), 0.45f);
         BuildMascotStation();
     }
 
@@ -335,8 +335,8 @@ public class ExhibitScene : MonoBehaviour
     // 摆在传送落点前方左侧 —— 一进数学区就能看见"这是个什么样的项目"。
     // =====================================================================
 
-    public const float ProjectMapWidth = 3.2f;
-    public const float ProjectMapHeight = 2.0f;
+    public const float ProjectMapWidth = 5.2f;
+    public const float ProjectMapHeight = 3.25f;
     public const float ProjectMapGlow = 0.55f;
 
     void BuildProjectMapBoard()
@@ -350,7 +350,7 @@ public class ExhibitScene : MonoBehaviour
 
         var root = new GameObject("Exhibit_ProjectMap");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(-8.2f, 1.72f, -45.5f);
+        root.transform.localPosition = new Vector3(-10.0f, 2.35f, -45.5f);
         root.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);   // 摆正：面向出生点
 
         var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
@@ -381,7 +381,7 @@ public class ExhibitScene : MonoBehaviour
         MakeBar(root.transform, frameMat, new Vector3(-hw * 0.7f, -hh - 0.45f, 0f), new Vector3(0.08f, 0.9f, 0.08f));
         MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.45f, 0f), new Vector3(0.08f, 0.9f, 0.08f));
 
-        BuildZone("Exhibit_ProjectMap", new Vector3(-8.2f, 1.6f, -45.5f), new Vector3(4.0f, 2.8f, 4.0f));
+        BuildZone("Exhibit_ProjectMap", new Vector3(-10.0f, 2.2f, -45.5f), new Vector3(6.0f, 4.0f, 6.0f));
     }
 
     // =====================================================================
@@ -390,8 +390,8 @@ public class ExhibitScene : MonoBehaviour
     // 目的：让刚进来的人站在墙前就能看懂「复合函数怎么拆」
     // =====================================================================
 
-    public const float MethodWallWidth = 3.0f;
-    public const float MethodWallHeight = 2.0f;
+    public const float MethodWallWidth = 5.0f;
+    public const float MethodWallHeight = 3.35f;
     public const float MethodWallGlow = 0.42f;
 
     void BuildMethodWall()
@@ -405,7 +405,7 @@ public class ExhibitScene : MonoBehaviour
 
         var root = new GameObject("Exhibit_MethodWall");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(4.6f, 1.60f, -45.5f);
+        root.transform.localPosition = new Vector3(10.0f, 2.40f, -45.5f);
         root.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);   // 摆正：面向出生点
 
         var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
@@ -435,7 +435,7 @@ public class ExhibitScene : MonoBehaviour
         MakeBar(root.transform, frameMat, new Vector3(-hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
         MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
 
-        BuildZone("Exhibit_MethodWall", new Vector3(4.6f, 1.55f, -45.5f), new Vector3(4.0f, 2.8f, 4.0f));
+        BuildZone("Exhibit_MethodWall", new Vector3(10.0f, 2.2f, -45.5f), new Vector3(6.0f, 4.0f, 6.0f));
     }
 
     // =====================================================================
@@ -444,8 +444,8 @@ public class ExhibitScene : MonoBehaviour
     //   2) 地面色带：区间开闭的"走一遍" —— 高度差 = 含不含端点
     // =====================================================================
 
-    public const float BridgeWallWidth = 3.0f;
-    public const float BridgeWallHeight = 2.0f;
+    public const float BridgeWallWidth = 5.0f;
+    public const float BridgeWallHeight = 3.35f;
     public const float BridgeWallGlow = 0.40f;
 
     void BuildBridgeWall()
@@ -459,7 +459,7 @@ public class ExhibitScene : MonoBehaviour
 
         var root = new GameObject("Exhibit_C00_Bridge");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(-1.8f, 1.60f, -45.5f);
+        root.transform.localPosition = new Vector3(0.0f, 2.40f, -45.5f);
         root.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);   // 摆正：面向出生点
 
         var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
@@ -487,7 +487,7 @@ public class ExhibitScene : MonoBehaviour
         MakeBar(root.transform, frameMat, new Vector3(-hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
         MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
 
-        BuildZone("Exhibit_C00_Bridge", new Vector3(-1.8f, 1.55f, -45.5f), new Vector3(4.0f, 2.8f, 4.0f));
+        BuildZone("Exhibit_C00_Bridge", new Vector3(0.0f, 2.2f, -45.5f), new Vector3(6.0f, 4.0f, 6.0f));
     }
 
     /// <summary>
