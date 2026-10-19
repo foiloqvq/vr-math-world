@@ -276,6 +276,7 @@ public class ExhibitScene : MonoBehaviour
         BuildBridgeWall();
         BuildIntervalBands();
         BuildSpawnPlaza();
+        BuildMathFloor();
         // 3D 版（Venn 圆环 / 子集台阶）已弃用：改成图示墙，更好懂。方法保留以便回退。
         // BuildVennZone(); BuildSubsetSteps();
         // 第 1 章图示墙：直接用一图流，比 3D 台子好懂
@@ -556,6 +557,64 @@ public class ExhibitScene : MonoBehaviour
 
             MakeBar(band.transform, m, new Vector3(i * step, h * 0.5f, 0f), new Vector3(0.70f, h, 0.62f));
         }
+    }
+
+    // =====================================================================
+    // 数学区地砖广场：一整块抬高 12 cm 的地台 + 网格地砖 + 六条章节色带 + 外围灯边
+    // 让"脚下"从一块灰平面变成有边界、有分区的地面
+    // =====================================================================
+
+    public const float FloorX = 0f;
+    public const float FloorZ = -45.5f;
+    public const float FloorW = 56f;      // 东西向
+    public const float FloorD = 13f;      // 南北向
+    public const float FloorH = 0.12f;
+
+    void BuildMathFloor()
+    {
+        var root = new GameObject("Math_Floor");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(FloorX, 0f, FloorZ);
+
+        // 地台本体：深蓝 + 网格贴图（复用 MaterialKit 的网格）
+        var slabMat = MaterialKit.MakeMaterial(new Color(0.09f, 0.13f, 0.22f), 0.20f, 0.02f);
+        var gridTex = MaterialKit.MakeGridTexture(256, 8);
+        MaterialKit.SetMainTexture(slabMat, gridTex, 7.0f);
+        MeshUtil.Spawn("Floor_Slab", MeshMath.Box(FloorW, FloorH, FloorD), slabMat, root.transform)
+            .transform.localPosition = new Vector3(0f, FloorH * 0.5f, 0f);
+
+        // 六条章节色带：贴在地台边缘，对应六面墙的 x 位置
+        float[] cx = { -20.5f, -12.3f, -4.1f, 4.1f, 12.3f, 20.5f };
+        Color[] cc =
+        {
+            new Color(1.00f, 0.62f, 0.78f), // 易错
+            new Color(0.70f, 0.62f, 1.00f), // 子集
+            new Color(0.35f, 0.75f, 1.00f), // 导览
+            new Color(1.00f, 0.85f, 0.40f), // 衔接
+            new Color(0.55f, 0.55f, 1.00f), // 方法
+            new Color(0.30f, 0.80f, 0.90f), // Venn
+        };
+        for (int i = 0; i < cx.Length; i++)
+        {
+            var stripMat = MaterialKit.MakeMaterial(cc[i], 0.25f, 0.70f);
+            MakeBar(root.transform, stripMat, new Vector3(cx[i], FloorH + 0.012f, FloorD * 0.5f - 0.35f),
+                new Vector3(4.2f, 0.02f, 0.55f));
+        }
+
+        // 外围灯边：四条长条
+        var edgeMat = MaterialKit.MakeMaterial(new Color(0.35f, 0.75f, 1.00f), 0.30f, 0.85f);
+        float hw = FloorW * 0.5f, hd = FloorD * 0.5f;
+        MakeBar(root.transform, edgeMat, new Vector3(0f, FloorH + 0.01f, hd - 0.08f), new Vector3(FloorW, 0.04f, 0.14f));
+        MakeBar(root.transform, edgeMat, new Vector3(0f, FloorH + 0.01f, -hd + 0.08f), new Vector3(FloorW, 0.04f, 0.14f));
+        MakeBar(root.transform, edgeMat, new Vector3(-hw + 0.08f, FloorH + 0.01f, 0f), new Vector3(0.14f, 0.04f, FloorD));
+        MakeBar(root.transform, edgeMat, new Vector3(hw - 0.08f, FloorH + 0.01f, 0f), new Vector3(0.14f, 0.04f, FloorD));
+
+        // 从广场到地台的连接通道（避免"悬空跳崖"）
+        var walkMat = MaterialKit.MakeMaterial(new Color(0.12f, 0.18f, 0.30f), 0.20f, 0.05f);
+        MeshUtil.Spawn("Floor_Bridge", MeshMath.Box(4.0f, FloorH, 6.0f), walkMat, root.transform)
+            .transform.localPosition = new Vector3(0f, FloorH * 0.5f, hd + 3.0f);
+
+        BuildZone("Math_Floor", new Vector3(0f, 0.3f, FloorZ), new Vector3(FloorW, 0.8f, FloorD));
     }
 
     // =====================================================================

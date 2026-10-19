@@ -401,3 +401,18 @@ body `{"text":"...","text_lang":"zh"}` → 返回 `audio/wav`（最小 JSON 即�
 3. 第 2 章 常用逻辑用语（充分必要 / 全称存在量词）→ 「箭头门」展品
 
 **图形工具**：`study-space/tools/math_diagram_util.py`（混排字体，必用，否则符号变方框）
+
+
+---
+
+## ⏸ 暂停点（2026-10-19 12:10）
+
+foilo 决定先补 **C# / Unity 基础**，VR 布局暂时冻结。**下次回来先做这一件**：
+
+- [ ] **生成数学区地台**：代码已写好（`BuildMathFloor()`，已插进 `BuildExhibits`），但**还没跑 Generate**
+      - 内容：56×13 m 地台、抬高 12 cm、网格地砖、六条章节色带、四边灯边、4×6 m 连接通道
+      - 做法：关掉 Unity → `Unity.exe -batchmode -quit -projectPath unity -executeMethod BuildScene.Generate` → 再 `.Verify`
+- [ ] 出生点广场（`BuildSpawnPlaza()`）已生成进场景：半径 6 m 圆盘 + 双发光环 + 8 放射纹 + 中心柱 + 四角灯
+- [ ] 六面墙现状：4.0×2.68 m，x = -20.5 / -12.3 / -4.1 / 4.1 / 12.3 / 20.5，z = -45.5
+
+**给 foilo 的学习建议**（等他要的时候再展开）：先学 Hierarchy/Scene 视图拖动、Ctrl+S、Play 模式、Prefab 概念；C# 只需看懂 MonoBehaviour 生命周期和 public 字段。
