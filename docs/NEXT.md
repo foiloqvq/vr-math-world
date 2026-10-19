@@ -416,3 +416,13 @@ foilo 决定先补 **C# / Unity 基础**，VR 布局暂时冻结。**下次回�
 - [ ] 六面墙现状：4.0×2.68 m，x = -20.5 / -12.3 / -4.1 / 4.1 / 12.3 / 20.5，z = -45.5
 
 **给 foilo 的学习建议**（等他要的时候再展开）：先学 Hierarchy/Scene 视图拖动、Ctrl+S、Play 模式、Prefab 概念；C# 只需看懂 MonoBehaviour 生命周期和 public 字段。
+
+
+---
+
+## 2026-10-19 追加：小鱼苗（本地替身）
+
+- 名字：**小鱼苗**（苗苗），代码/文档里统一这么叫，别写 twin
+- 位置：`study-space/tools/local-twin/`（人格、规则、索引）+ `study-space/tools/bot-cycle.ps1`（值守编排）
+- 规则可自改：`local-twin/rules/`（人格 / 盲区词 / 安全短句），改完下一轮生效
+- 逻辑要人批：`proposals/` 待审
