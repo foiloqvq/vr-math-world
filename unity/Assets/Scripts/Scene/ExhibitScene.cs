@@ -273,6 +273,8 @@ public class ExhibitScene : MonoBehaviour
         BuildSlopesExhibit();
         BuildProjectMapBoard();
         BuildMethodWall();
+        BuildBridgeWall();
+        BuildIntervalBands();
         BuildMascotStation();
     }
 
@@ -425,6 +427,125 @@ public class ExhibitScene : MonoBehaviour
         MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
 
         BuildZone("Exhibit_MethodWall", new Vector3(2.6f, 1.45f, -45.4f), new Vector3(3.2f, 2.4f, 3.2f));
+    }
+
+    // =====================================================================
+    // 第 0 章：初高衔接
+    //   1) 墙：六个必备变形（图由 study-space/tools/make-bridge-diagram.py 生成）
+    //   2) 地面色带：区间开闭的"走一遍" —— 高度差 = 含不含端点
+    // =====================================================================
+
+    public const float BridgeWallWidth = 2.35f;
+    public const float BridgeWallHeight = 1.575f;
+    public const float BridgeWallGlow = 0.40f;
+
+    void BuildBridgeWall()
+    {
+        var tex = Resources.Load<Texture2D>("Art/C00_Bridge");
+        if (tex == null)
+        {
+            Debug.LogWarning("[ExhibitScene] 缺少 Resources/Art/C00_Bridge.png —— 衔接墙跳过（先跑 study-space/tools/make-bridge-diagram.py）");
+            return;
+        }
+
+        var root = new GameObject("Exhibit_C00_Bridge");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(-10.8f, 1.55f, -43.4f);
+        root.transform.localRotation = Quaternion.Euler(0f, 22f, 0f);
+
+        var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
+        MaterialKit.SetMainTexture(mat, tex, 1f);
+        MaterialKit.SetEmissionTexture(mat, tex, BridgeWallGlow);
+
+        var panel = MeshUtil.Spawn("C00_BridgePanel", MeshMath.PanelXY(1f, 8), mat, root.transform);
+        MeshUtil.SetPlanarUVs(panel.GetComponent<MeshFilter>().sharedMesh, 0, 1);
+        {
+            Mesh pm = panel.GetComponent<MeshFilter>().sharedMesh;
+            Vector2[] uvs = pm.uv;
+            for (int i = 0; i < uvs.Length; i++) uvs[i] = new Vector2(1f - uvs[i].x, uvs[i].y);
+            pm.uv = uvs;
+        }
+        panel.transform.localScale = new Vector3(BridgeWallWidth, BridgeWallHeight, 1f);
+
+        var frameMat = MaterialKit.MakeMaterial(new Color(0.85f, 0.70f, 0.35f), 0.45f, 0.2f);
+        float hw = BridgeWallWidth * 0.5f;
+        float hh = BridgeWallHeight * 0.5f;
+        float bar = 0.09f;
+        MakeBar(root.transform, frameMat, new Vector3(0f, hh, 0f), new Vector3(BridgeWallWidth + bar * 2f, bar, bar));
+        MakeBar(root.transform, frameMat, new Vector3(0f, -hh, 0f), new Vector3(BridgeWallWidth + bar * 2f, bar, bar));
+        MakeBar(root.transform, frameMat, new Vector3(-hw, 0f, 0f), new Vector3(bar, BridgeWallHeight, bar));
+        MakeBar(root.transform, frameMat, new Vector3(hw, 0f, 0f), new Vector3(bar, BridgeWallHeight, bar));
+        MakeBar(root.transform, frameMat, new Vector3(-hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
+        MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
+
+        BuildZone("Exhibit_C00_Bridge", new Vector3(-10.8f, 1.45f, -43.4f), new Vector3(3.2f, 2.4f, 3.2f));
+    }
+
+    /// <summary>
+    /// 区间色带：同一条数轴画两遍，用"砖的高度"表示端点含不含。
+    ///   高砖（0.22）= 闭 [ ]，矮砖（0.06）= 开 ( )
+    /// 走一遍就知道：开的那块是"平的"，闭的那块要抬脚跨一下。
+    /// </summary>
+    void BuildIntervalBands()
+    {
+        var insideMat = MaterialKit.MakeMaterial(new Color(0.35f, 0.95f, 0.75f), 0.25f, 0.75f);
+        var outsideMat = MaterialKit.MakeMaterial(new Color(0.10f, 0.13f, 0.20f), 0.10f, 0.02f);
+        var closedMat = MaterialKit.MakeMaterial(new Color(1.00f, 0.85f, 0.35f), 0.25f, 0.70f);
+        var openMat = MaterialKit.MakeMaterial(new Color(0.35f, 0.55f, 0.75f), 0.25f, 0.25f);
+
+        var root = new GameObject("Exhibit_C00_Interval");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(-8.6f, 0f, -41.4f);
+
+        const float step = 0.78f;
+
+        // 第 1 条：A = (−1, 3)   两端都开 → 两块都是矮砖
+        // 第 2 条：B = [1, 3)    左闭右开 → 左端高砖（要抬脚），右端矮砖
+        // 数值轴：每块 = 序号对应的整数，states 里 2=闭端点 3=开端点
+        //   x:  -2  -1   0   1   2   3   4   5
+        BuildBand(root.transform, "Band_Open", 0f, step,
+            new int[] { 0, 3, 1, 1, 1, 3, 0, 0 },
+            new int[] { -2, -1, 0, 1, 2, 3, 4, 5 },
+            insideMat, outsideMat, closedMat, openMat, 0);
+        BuildBand(root.transform, "Band_HalfOpen", 1.1f, step,
+            new int[] { 0, 0, 0, 2, 1, 1, 3, 0 },
+            new int[] { -2, -1, 0, 1, 2, 3, 4, 5 },
+            insideMat, outsideMat, closedMat, openMat, 0);
+
+        BuildZone("Exhibit_C00_Interval", new Vector3(-8.6f, 0.4f, -40.9f), new Vector3(4.2f, 1.2f, 3.0f));
+    }
+
+    /// <summary>
+    /// 画一条区间色带。marks[i] 是第 i 块相对序号对应的值（用于判断端点）。
+    /// closedIdx/openIdx: 分别是"闭端点"和"开端点"的序号（0 起），-1 表示没有。
+    /// </summary>
+    void BuildBand(Transform parent, string name, float zOffset, float step, int[] states,
+                   int[] values, Material insideMat, Material outsideMat, Material closedMat, Material openMat,
+                   int dummy)
+    {
+        var band = new GameObject(name);
+        band.transform.SetParent(parent, false);
+        band.transform.localPosition = new Vector3(0f, 0f, zOffset);
+
+        for (int i = 0; i < states.Length; i++)
+        {
+            int st = states[i];
+            Material m = outsideMat;
+            float h = 0.06f;
+            if (st == 1) { m = insideMat; h = 0.10f; }
+            else if (st == 3) { m = openMat; h = 0.06f; }
+            else if (st == 2) { m = closedMat; h = 0.22f; }
+
+            // 端点：序号 2 和 5 分别是两条带的首尾端点（-1 与 3 / 1 与 3）
+            bool isEnd = (st == 3 || st == 2);
+            if (isEnd)
+            {
+                // 开端点 = 矮砖，闭端点 = 高砖（要抬脚）
+                h = (st == 3) ? 0.06f : 0.22f;
+            }
+
+            MakeBar(band.transform, m, new Vector3(i * step, h * 0.5f, 0f), new Vector3(0.70f, h, 0.62f));
+        }
     }
 
     // =====================================================================
