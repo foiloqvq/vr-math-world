@@ -341,8 +341,8 @@ public class ExhibitScene : MonoBehaviour
 
         var root = new GameObject("Exhibit_ProjectMap");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(-6.2f, 1.62f, -44.5f);
-        root.transform.localRotation = Quaternion.Euler(0f, 22f, 0f);
+        root.transform.localPosition = new Vector3(-8.0f, 1.62f, -45.5f);
+        root.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);   // 摆正：面向出生点
 
         var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
         MaterialKit.SetMainTexture(mat, tex, 1f);
@@ -372,7 +372,7 @@ public class ExhibitScene : MonoBehaviour
         MakeBar(root.transform, frameMat, new Vector3(-hw * 0.7f, -hh - 0.45f, 0f), new Vector3(0.08f, 0.9f, 0.08f));
         MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.45f, 0f), new Vector3(0.08f, 0.9f, 0.08f));
 
-        BuildZone("Exhibit_ProjectMap", new Vector3(-6.2f, 1.5f, -44.5f), new Vector3(3.6f, 2.6f, 3.6f));
+        BuildZone("Exhibit_ProjectMap", new Vector3(-8.0f, 1.5f, -45.5f), new Vector3(3.6f, 2.6f, 3.6f));
     }
 
     // =====================================================================
@@ -396,8 +396,8 @@ public class ExhibitScene : MonoBehaviour
 
         var root = new GameObject("Exhibit_MethodWall");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(2.6f, 1.55f, -45.4f);
-        root.transform.localRotation = Quaternion.Euler(0f, 22f, 0f);
+        root.transform.localPosition = new Vector3(2.4f, 1.55f, -45.5f);
+        root.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);   // 摆正：面向出生点
 
         var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
         MaterialKit.SetMainTexture(mat, tex, 1f);
@@ -426,7 +426,7 @@ public class ExhibitScene : MonoBehaviour
         MakeBar(root.transform, frameMat, new Vector3(-hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
         MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
 
-        BuildZone("Exhibit_MethodWall", new Vector3(2.6f, 1.45f, -45.4f), new Vector3(3.2f, 2.4f, 3.2f));
+        BuildZone("Exhibit_MethodWall", new Vector3(2.4f, 1.45f, -45.5f), new Vector3(3.2f, 2.4f, 3.2f));
     }
 
     // =====================================================================
@@ -450,8 +450,8 @@ public class ExhibitScene : MonoBehaviour
 
         var root = new GameObject("Exhibit_C00_Bridge");
         root.transform.SetParent(transform, false);
-        root.transform.localPosition = new Vector3(-10.8f, 1.55f, -43.4f);
-        root.transform.localRotation = Quaternion.Euler(0f, 22f, 0f);
+        root.transform.localPosition = new Vector3(-2.8f, 1.55f, -45.5f);
+        root.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);   // 摆正：面向出生点
 
         var mat = MaterialKit.MakeMaterial(Color.white, 0.12f, 0f);
         MaterialKit.SetMainTexture(mat, tex, 1f);
@@ -478,7 +478,7 @@ public class ExhibitScene : MonoBehaviour
         MakeBar(root.transform, frameMat, new Vector3(-hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
         MakeBar(root.transform, frameMat, new Vector3(hw * 0.7f, -hh - 0.42f, 0f), new Vector3(0.08f, 0.84f, 0.08f));
 
-        BuildZone("Exhibit_C00_Bridge", new Vector3(-10.8f, 1.45f, -43.4f), new Vector3(3.2f, 2.4f, 3.2f));
+        BuildZone("Exhibit_C00_Bridge", new Vector3(-2.8f, 1.45f, -45.5f), new Vector3(3.2f, 2.4f, 3.2f));
     }
 
     /// <summary>
